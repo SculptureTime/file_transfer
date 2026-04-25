@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>数据传输工具箱</title>
+    <script src="./js/qrcode.min.js"></script>
+    <script src="./js/lz-string.min.js"></script>
+    <script src="./js/pako.min.js"></script>
+    <script src="./js/jsQR.min.js"></script>
+    <script src="./js/jszip.min.js"></script>
+    <style>
+      :root {
+        --bg: #0e1116;
+        --panel: #161b22;
+        --panel-2: #1d2430;
+        --line: #2d3645;
+        --text: #f3f7ff;
+        --muted: #9aa8bd;
+        --accent: #ff9f1a;
+        --accent-2: #49c7ff;
+        --danger: #ff5d5d;
+        --success: #4be28b;
+        --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(73, 199, 255, 0.16), transparent 26%),
+          radial-gradient(circle at top right, rgba(255, 159, 26, 0.16), transparent 28%),
+          linear-gradient(180deg, #091019 0%, #0e1116 100%);
+        padding: 18px;
+      }
+
+      .app {
+        max-width: 1200px;
+        margin: 0 auto;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .hero {
+        background: linear-gradient(135deg, rgba(255, 159, 26, 0.14), rgba(73, 199, 255, 0.12));
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+        margin-bottom: 20px;
+      }
+
+      .hero-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .brand {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: clamp(1.7rem, 3vw, 2.4rem);
+        letter-spacing: -0.03em;
+      }
+
+      .brand p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 68ch;
+      }
+
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .badge {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 0.88rem;
+      }
+
+      .tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin: 18px 0 16px;
+      }
+
+      .tab {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(22, 27, 34, 0.9);
+        color: var(--muted);
+        border-radius: 16px;
+        padding: 16px 18px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 700;
+        text-align: center;
+        transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+          background 0.2s ease;
+      }
+
+      .tab:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 159, 26, 0.45);
+      }
+
+      .tab.active {
+        color: #151515;
+        background: linear-gradient(135deg, var(--accent), #ffd166);
+        border-color: transparent;
+      }
+
+      .panel {
+        display: none;
+        background: rgba(22, 27, 34, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .panel.active {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .panel-header {
+        padding: 22px 24px;
+        background: linear-gradient(135deg, rgba(255, 159, 26, 0.12), rgba(73, 199, 255, 0.08));
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .panel-header h2 {
+        margin: 0 0 6px 0;
+        font-size: 1.3rem;
+      }
+
+      .panel-header p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .panel-body {
+        padding: 16px 18px;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .card {
+        background: rgba(29, 36, 48, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 16px;
+      }
+
+      .card h3 {
+        margin: 0 0 12px 0;
+        font-size: 1.05rem;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 12px 0 14px;
+      }
+
+      .btn {
+        appearance: none;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 18px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent), #ffbe55);
+        color: #161616;
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .btn-danger {
+        background: rgba(255, 93, 93, 0.16);
+        color: #ffd0d0;
+        border: 1px solid rgba(255, 93, 93, 0.35);
+      }
+
+      .btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+        transform: none;
+      }
+
+      textarea,
+      input[type="text"] {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(12, 16, 22, 0.92);
+        color: var(--text);
+        padding: 15px 16px;
+        font: inherit;
+        outline: none;
+      }
+
+      textarea:focus,
+      input[type="text"]:focus {
+        border-color: rgba(73, 199, 255, 0.65);
+        box-shadow: 0 0 0 4px rgba(73, 199, 255, 0.12);
+      }
+
+      textarea {
+        min-height: 150px;
+        resize: vertical;
+      }
+
+      .hint {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .output {
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow: auto;
+        min-height: 80px;
+        max-height: 180px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(8, 11, 16, 0.78);
+        padding: 14px;
+      }
+
+      .preview-box {
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        overflow: hidden;
+      }
+
+      .thumb-list {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 8px;
+      }
+
+      .thumb-list img {
+        width: 100%;
+        height: 70px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .dropzone {
+        border: 2px dashed rgba(255, 159, 26, 0.55);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 16px;
+        min-height: 180px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+        overflow: hidden;
+      }
+
+      .dropzone.dragover {
+        border-color: var(--accent-2);
+        background: rgba(73, 199, 255, 0.1);
+      }
+
+      .dropzone strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .dropzone.has-items {
+        justify-content: flex-start;
+        align-items: stretch;
+        text-align: left;
+      }
+
+      .dropzone-list {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 10px;
+        max-height: 120px;
+        overflow: auto;
+      }
+
+      .dropzone-item {
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(8, 11, 16, 0.78);
+        min-height: 92px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .decode-item-bar {
+        width: 100%;
+        border-radius: 6px;
+        padding: 8px 10px;
+        text-align: center;
+        background: #07090d;
+      }
+
+      .decode-item-remove {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: #f2f2f2;
+        color: #111;
+        border-radius: 4px;
+        width: 34px;
+        height: 30px;
+        font-size: 1.1rem;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .decode-item-status {
+        font-size: 0.86rem;
+        font-weight: 700;
+        color: var(--muted);
+      }
+
+      .decode-item-status.success {
+        color: var(--accent);
+      }
+
+      .decode-item-status.error {
+        color: var(--danger);
+      }
+
+      .compact-output {
+        min-height: 56px;
+        max-height: 76px;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+      }
+
+      .stat {
+        border-radius: 14px;
+        padding: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .stat .label {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .stat .value {
+        margin-top: 6px;
+        font-size: 1.15rem;
+        font-weight: 800;
+      }
+
+      .qrcode-list {
+        display: grid;
+        gap: 16px;
+      }
+
+      .qrcode-item {
+        border-radius: 18px;
+        background: rgba(10, 14, 20, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 16px;
+      }
+
+      .qrcode-item h4 {
+        margin: 0 0 10px 0;
+      }
+
+      .qrcode-canvas-wrap {
+        display: inline-block;
+        background: #fff;
+        padding: 14px;
+        border-radius: 14px;
+      }
+
+      .qr-options {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .option-field {
+        display: grid;
+        gap: 10px;
+      }
+
+      .option-field label {
+        color: var(--muted);
+        font-size: 0.92rem;
+        font-weight: 700;
+      }
+
+      .option-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .option-chip {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(12, 16, 22, 0.92);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 11px 14px;
+        font: inherit;
+        font-size: 0.92rem;
+        line-height: 1;
+        cursor: pointer;
+        transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .option-chip:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 159, 26, 0.45);
+      }
+
+      .option-chip.active {
+        background: linear-gradient(135deg, var(--accent), #ffd166);
+        color: #161616;
+        border-color: transparent;
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(5, 8, 12, 0.72);
+        backdrop-filter: blur(12px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        z-index: 1000;
+      }
+
+      .modal.open {
+        display: flex;
+      }
+
+      .modal-card {
+        width: min(860px, 100%);
+        max-height: min(90vh, 900px);
+        overflow: auto;
+        background: rgba(22, 27, 34, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 22px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .modal-header h3 {
+        margin: 0;
+        font-size: 1.15rem;
+      }
+
+      .modal-close {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        border-radius: 999px;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+        font-size: 1.1rem;
+      }
+
+      .modal-body {
+        padding: 22px;
+      }
+
+      .modal-preview-image {
+        width: 100%;
+        max-width: 760px;
+        display: block;
+        margin: 0 auto;
+        background: #fff;
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      .qr-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+      }
+
+      .qr-gallery-item {
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 14px;
+      }
+
+      .qr-gallery-item img {
+        width: 100%;
+        display: block;
+        background: #fff;
+        padding: 12px;
+        border-radius: 14px;
+      }
+
+      .qr-gallery-item .caption {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        text-align: center;
+      }
+
+      .qr-download-btn {
+        margin-top: 10px;
+        width: 100%;
+        padding: 10px 12px;
+      }
+
+      .modal-pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        color: var(--text);
+        background: rgba(12, 16, 22, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 18px;
+        max-height: 60vh;
+        overflow: auto;
+      }
+
+      .file-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .file-grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .file-preview {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 140px 1fr;
+        align-items: center;
+      }
+
+      .file-preview img {
+        width: 100%;
+        height: 150px;
+        object-fit: contain;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .status {
+        color: var(--muted);
+        margin-top: 8px;
+      }
+
+      .status.success {
+        color: var(--success);
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .small {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      @media (max-width: 820px) {
+        .tabs {
+          grid-template-columns: 1fr;
+        }
+
+        .file-grid.two,
+        .file-preview {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <section class="hero">
+        <div class="hero-top">
+          <div class="brand">
+            <h1>数据传输工具箱</h1>
+            <p>
+              支持文件转 Base64、Base64 还原文件、文本生成二维码，以及二维码文本/图片解码。
+            </p>
+          </div>
+          <div class="badge-row">
+            <span class="badge">单页使用</span>
+            <span class="badge">离线可用</span>
+            <span class="badge">无需构建</span>
+          </div>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="工具切换">
+        <button class="tab active" data-tab="text-qr" onclick="switchTab('text-qr')">
+          文本转二维码
+        </button>
+        <button class="tab" data-tab="qr-decode" onclick="switchTab('qr-decode')">
+          二维码解码
+        </button>
+      </nav>
+
+      <section id="text-qr" class="panel active">
+        <div class="panel-header">
+          <h2>文本转二维码</h2>
+          <p>支持文件输入或手动文本输入，二维码生成后可批量打包下载。</p>
+        </div>
+        <div class="panel-body grid">
+          <div class="card">
+            <h3>输入内容</h3>
+            <div id="qrFileMode">
+              <div
+                id="qrFileDropZone"
+                class="dropzone"
+                onclick="document.getElementById('qrFileInput').click()"
+              >
+                <strong>点击或拖拽文件到这里</strong>
+                <span class="small">文件会转换成 Base64 JSON 再生成二维码</span>
+              </div>
+              <input id="qrFileInput" type="file" class="hidden" />
+              <div class="toolbar">
+                <button class="btn btn-primary" onclick="openQRFilePicker()">选择文件</button>
+                <button class="btn btn-secondary" onclick="switchQRInputMode('text')">输入文本</button>
+              </div>
+              <div id="qrFilePreview" class="output preview-box">未选择文件。</div>
+            </div>
+
+            <div id="qrTextMode" class="hidden">
+              <textarea id="qrTextInput" placeholder="输入要生成二维码的文本"></textarea>
+              <div class="toolbar">
+                <button class="btn btn-secondary" onclick="switchQRInputMode('file')">选择文件</button>
+              </div>
+            </div>
+
+            <div class="qr-options">
+              <div class="option-field">
+                <label>二维码大小</label>
+                <div class="option-chips" data-group="size">
+                  <button class="option-chip" type="button" data-value="512" onclick="setOptionChip('size', '512')">512</button>
+                  <button class="option-chip" type="button" data-value="768" onclick="setOptionChip('size', '768')">768</button>
+                  <button class="option-chip active" type="button" data-value="1024" onclick="setOptionChip('size', '1024')">1024</button>
+                  <button class="option-chip" type="button" data-value="1536" onclick="setOptionChip('size', '1536')">1536</button>
+                  <button class="option-chip" type="button" data-value="2048" onclick="setOptionChip('size', '2048')">2048</button>
+                </div>
+              </div>
+              <div class="option-field">
+                <label>纠错等级</label>
+                <div class="option-chips" data-group="ecc">
+                  <button class="option-chip" type="button" data-value="L" onclick="setOptionChip('ecc', 'L')">低</button>
+                  <button class="option-chip" type="button" data-value="M" onclick="setOptionChip('ecc', 'M')">中</button>
+                  <button class="option-chip active" type="button" data-value="Q" onclick="setOptionChip('ecc', 'Q')">高</button>
+                  <button class="option-chip" type="button" data-value="H" onclick="setOptionChip('ecc', 'H')">最高</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="toolbar">
+              <button class="btn btn-primary" onclick="generateQR()">生成二维码</button>
+              <button id="batchDownloadBtn" class="btn btn-secondary" onclick="downloadAllQRZip()" disabled>批量下载</button>
+              <button class="btn btn-danger" onclick="clearQRGenerator()">清空</button>
+              <button id="showCompressedBtn" class="btn btn-secondary" onclick="previewCompressedResult()" disabled>压缩结果</button>
+              <button id="showQrBtn" class="btn btn-secondary" onclick="openQrGallery()" disabled>显示二维码</button>
+            </div>
+            <div class="hint" id="qrModeHint">当前模式：文件输入</div>
+          </div>
+
+          <div class="card">
+            <div class="stats">
+              <div class="stat">
+                <div class="label">原始长度</div>
+                <div class="value" id="rawLength">0</div>
+              </div>
+              <div class="stat">
+                <div class="label">压缩长度</div>
+                <div class="value" id="compressedLength">0</div>
+              </div>
+              <div class="stat">
+                <div class="label">二维码数量</div>
+                <div class="value" id="segmentCount">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="qrStatus" class="card">
+            <h3>生成状态</h3>
+            <div class="status" id="qrStatusText">等待生成二维码。</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="qr-decode" class="panel">
+        <div class="panel-header">
+          <h2>二维码解码</h2>
+          <p>支持二维码图片和二维码文本解码，解码结果可直接下载。</p>
+        </div>
+        <div class="panel-body grid">
+          <div class="card">
+            <h3>图片解码</h3>
+            <div id="dropZone" class="dropzone" onclick="document.getElementById('qrImageInput').click()">
+              <strong>点击或拖拽二维码图片到这里</strong>
+              <span class="small">支持多张图片顺序解码</span>
+              <div id="decodeDropList" class="dropzone-list hidden"></div>
+            </div>
+            <input id="qrImageInput" type="file" accept="image/*" multiple class="hidden" />
+            <div class="toolbar">
+              <button class="btn btn-secondary" onclick="document.getElementById('qrImageInput').click()">选择图片</button>
+              <button class="btn btn-danger" onclick="resetDecodeState()">清空结果</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>文本解码</h3>
+            <textarea id="decodeText" placeholder="粘贴二维码文本、压缩内容或 v1/v2/v3 编码"></textarea>
+            <div class="toolbar">
+              <button class="btn btn-primary" onclick="decodeTextInput()">解码</button>
+              <button class="btn btn-secondary" onclick="resetDecodeState()">重置</button>
+              <button class="btn btn-secondary" onclick="previewDecodedResult()">解码结果</button>
+              <button id="downloadDecodedBtn" class="btn btn-secondary" onclick="downloadDecodedFile()" disabled>下载文件</button>
+            </div>
+            <div class="hint">如果输入不是 v1/v2/v3 格式，系统会先尝试按压缩文本处理。</div>
+          </div>
+
+          <div class="card">
+            <h3>解码状态</h3>
+            <div id="decodeResult" class="output compact-output">等待输入。</div>
+            <div id="decodeError" class="hint status error hidden"></div>
+          </div>
+
+        </div>
+      </section>
+    </div>
+
+    <div id="modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modalTitle">预览</h3>
+          <button class="modal-close" type="button" onclick="closeModal()">×</button>
+        </div>
+        <div id="modalBody" class="modal-body"></div>
+      </div>
+    </div>
+
+    <script>
+      const state = {
+        inputMode: "file",
+        filePayload: "",
+        fileName: "",
+        textDraft: "",
+        qrSize: "1024",
+        qrEcc: "Q",
+        compressed: "",
+        qrImages: [],
+        isGenerating: false,
+        generationToken: 0,
+        segmentsData: null,
+        expectedTotal: 0,
+        decodedPayload: "",
+        decodedCanDownload: false,
+      };
+      const MAX_FILE_SIZE_MB = 10;
+      const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+      const MAX_SEGMENT_COUNT = 10000;
+      const MAX_PAYLOAD_CHARS = 16_000_000;
+
+      function switchTab(tabId) {
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.tab === tabId);
+        });
+        document.querySelectorAll(".panel").forEach((panel) => {
+          panel.classList.toggle("active", panel.id === tabId);
+        });
+      }
+
+      function reorderActionButtons() {
+        const showBtn = document.getElementById("showQrBtn");
+        const batchBtn = document.getElementById("batchDownloadBtn");
+        const compressedBtn = document.getElementById("showCompressedBtn");
+        if (showBtn && batchBtn && compressedBtn && showBtn.parentElement) {
+          const bar = showBtn.parentElement;
+          bar.appendChild(compressedBtn);
+          bar.appendChild(showBtn);
+          bar.appendChild(batchBtn);
+        }
+      }
+
+      function setBatchDownloadEnabled(enabled) {
+        document.getElementById("batchDownloadBtn").disabled = !enabled;
+      }
+
+      function setShowQrEnabled(enabled) {
+        document.getElementById("showQrBtn").disabled = !enabled;
+      }
+
+      function setShowCompressedEnabled(enabled) {
+        document.getElementById("showCompressedBtn").disabled = !enabled;
+      }
+
+      function setDecodedDownloadEnabled(enabled) {
+        document.getElementById("downloadDecodedBtn").disabled = !enabled;
+      }
+
+      function setDecodeError(message) {
+        const error = document.getElementById("decodeError");
+        error.textContent = message;
+        error.classList.remove("hidden");
+      }
+
+      function clearDecodeError() {
+        const error = document.getElementById("decodeError");
+        error.textContent = "";
+        error.classList.add("hidden");
+      }
+
+      /*
+      function setDecodeResult(text, canDownload) {
+        state.decodedPayload = text;
+        state.decodedCanDownload = Boolean(canDownload);
+        const isProgress = typeof text === "string" && text.includes("已收到");
+        document.getElementById("decodeResult").textContent = canDownload
+          ? "解码成功，点击“解码结果”查看。"
+          : isProgress
+            ? "解码进行中"
+            : text || "解码失败";
+        setDecodedDownloadEnabled(canDownload);
+      }
+
+      */
+      function setDecodeResult(text, canDownload, meta = null) {
+        state.decodedPayload = text;
+        state.decodedCanDownload = Boolean(canDownload);
+
+        let displayText = text || "\u89e3\u7801\u5931\u8d25";
+        if (canDownload) {
+          displayText = "\u89e3\u7801\u6210\u529f\uff0c\u70b9\u51fb\u89e3\u7801\u7ed3\u679c\u67e5\u770b\u3002";
+        } else if (meta && meta.segmentInfo) {
+          const info = meta.segmentInfo;
+          const missingText = info.missing.length ? info.missing.join(",") : "\u65e0";
+          displayText = `\u89e3\u7801\u6210\u529f${info.currentSegment}\uff0c\u7f3a\u5c11${missingText}`;
+        } else if (!text && Array.isArray(state.segmentsData)) {
+          displayText = "\u89e3\u7801\u8fdb\u884c\u4e2d";
+        }
+
+        document.getElementById("decodeResult").textContent = displayText;
+        setDecodedDownloadEnabled(canDownload);
+      }
+
+      function setQRStatus(text) {
+        document.getElementById("qrStatusText").textContent = text;
+      }
+
+      function formatFileSize(bytes) {
+        if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
+        const units = ["B", "KB", "MB", "GB"];
+        let size = bytes;
+        let idx = 0;
+        while (size >= 1024 && idx < units.length - 1) {
+          size /= 1024;
+          idx += 1;
+        }
+        return `${size.toFixed(idx === 0 ? 0 : 2)} ${units[idx]}`;
+      }
+
+      function cancelQRGeneration(silent = false) {
+        state.generationToken += 1;
+        state.isGenerating = false;
+        if (!silent) {
+          setQRStatus("已取消二维码生成。");
+        }
+      }
+
+      function openModal(title, bodyNode) {
+        const modal = document.getElementById("modal");
+        const modalTitle = document.getElementById("modalTitle");
+        const modalBody = document.getElementById("modalBody");
+        modalTitle.textContent = title;
+        modalBody.innerHTML = "";
+        modalBody.appendChild(bodyNode);
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeModal() {
+        const modal = document.getElementById("modal");
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden", "true");
+      }
+
+      function openQRFilePicker() {
+        document.getElementById("qrFileInput").click();
+      }
+
+      function switchQRInputMode(mode) {
+        state.inputMode = mode;
+        document.getElementById("qrFileMode").classList.toggle("hidden", mode !== "file");
+        document.getElementById("qrTextMode").classList.toggle("hidden", mode !== "text");
+        document.getElementById("qrModeHint").textContent =
+          mode === "file" ? "当前模式：文件输入" : "当前模式：文本输入";
+
+        if (mode === "text") {
+          const textarea = document.getElementById("qrTextInput");
+          textarea.value = state.textDraft || "";
+          textarea.focus();
+        }
+      }
+
+      function setOptionChip(group, value) {
+        if (group === "size") {
+          state.qrSize = value;
+        } else if (group === "ecc") {
+          state.qrEcc = value;
+        }
+
+        document.querySelectorAll(`.option-chips[data-group="${group}"] .option-chip`).forEach((button) => {
+          button.classList.toggle("active", button.dataset.value === value);
+        });
+      }
+
+      function copyText(text) {
+        if (!text) return Promise.reject(new Error("空内容"));
+        if (navigator.clipboard && window.isSecureContext) {
+          return navigator.clipboard.writeText(text);
+        }
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        return Promise.resolve();
+      }
+
+      function clearQRGenerator() {
+        cancelQRGeneration(true);
+        state.filePayload = "";
+        state.fileName = "";
+        state.textDraft = "";
+        state.compressed = "";
+        state.qrImages = [];
+        document.getElementById("qrFileInput").value = "";
+        document.getElementById("qrTextInput").value = "";
+        document.getElementById("qrFilePreview").textContent = "未选择文件。";
+        setQRStatus("等待生成二维码。");
+        document.getElementById("qrFilePreview").textContent = "\u672a\u9009\u62e9\u6587\u4ef6\u3002";
+        setQRStatus("\u7b49\u5f85\u751f\u6210\u4e8c\u7ef4\u7801\u3002");
+        document.getElementById("rawLength").textContent = "0";
+        document.getElementById("compressedLength").textContent = "0";
+        document.getElementById("segmentCount").textContent = "0";
+        setBatchDownloadEnabled(false);
+        setShowQrEnabled(false);
+        setShowCompressedEnabled(false);
+        switchQRInputMode("file");
+      }
+
+      function resetDecodeState() {
+        state.segmentsData = null;
+        state.expectedTotal = 0;
+        state.decodedPayload = "";
+        state.decodedCanDownload = false;
+        document.getElementById("decodeText").value = "";
+        document.getElementById("decodeResult").textContent = "等待输入。";
+        clearDecodeDropList();
+        setDecodedDownloadEnabled(false);
+        clearDecodeError();
+      }
+
+      function clearDecodeDropList() {
+        const dropZoneEl = document.getElementById("dropZone");
+        const list = document.getElementById("decodeDropList");
+        list.innerHTML = "";
+        list.classList.add("hidden");
+        dropZoneEl.classList.remove("has-items");
+      }
+
+      function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target.result);
+          reader.onerror = () => reject(new Error("文件读取失败"));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function handleQRFile(file) {
+        if (!file) return;
+        if (state.isGenerating) {
+          setQRStatus("\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801\uff0c\u8bf7\u5148\u6e05\u7a7a\u6216\u7b49\u5f85\u5b8c\u6210\u3002");
+          return;
+        }
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          state.filePayload = "";
+          state.fileName = "";
+          document.getElementById("qrFilePreview").textContent =
+            `\u6587\u4ef6\u8fc7\u5927\uff08${formatFileSize(file.size)}\uff09\uff0c\u4e0a\u9650 ${MAX_FILE_SIZE_MB} MB\u3002`;
+          setQRStatus("\u6587\u4ef6\u8fc7\u5927\uff0c\u5df2\u963b\u6b62\u751f\u6210\u4ee5\u907f\u514d\u9875\u9762\u5d29\u6e83\u3002");
+          updateQRStats(0, 0, 0);
+          state.isGenerating = false;
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function () {
+          state.fileName = file.name;
+          state.filePayload = JSON.stringify({
+            dataurl: reader.result,
+            filename: file.name,
+          });
+          const payloadLength = state.filePayload.length;
+          document.getElementById("qrFilePreview").textContent =
+            `\u6587\u4ef6\uff1a${file.name}\n\u5927\u5c0f\uff1a${formatFileSize(file.size)}\n\u5b57\u7b26\u957f\u5ea6\uff1a${payloadLength}`;
+          setQRStatus("\u6587\u4ef6\u5df2\u8f7d\u5165\uff0c\u53ef\u751f\u6210\u4e8c\u7ef4\u7801\u3002");
+        };
+        reader.readAsDataURL(file);
+      }
+
+      document.getElementById("qrFileInput").addEventListener("change", (event) => {
+        const file = event.target.files && event.target.files[0];
+        handleQRFile(file);
+        event.target.value = "";
+      });
+
+      document.getElementById("qrTextInput").addEventListener("input", (event) => {
+        state.textDraft = event.target.value;
+      });
+
+      const qrFileDropZone = document.getElementById("qrFileDropZone");
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        qrFileDropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      });
+      ["dragenter", "dragover"].forEach((eventName) => {
+        qrFileDropZone.addEventListener(eventName, () => qrFileDropZone.classList.add("dragover"));
+      });
+      ["dragleave", "drop"].forEach((eventName) => {
+        qrFileDropZone.addEventListener(eventName, () => qrFileDropZone.classList.remove("dragover"));
+      });
+      qrFileDropZone.addEventListener("drop", (event) => {
+        const file = event.dataTransfer.files && event.dataTransfer.files[0];
+        handleQRFile(file);
+      });
+
+      function downloadFile(url, name) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        a.target = "_blank";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      function downloadBlob(blob, name) {
+        const url = URL.createObjectURL(blob);
+        downloadFile(url, name);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      function dataURLtoBlob(dataurl) {
+        const parts = dataurl.split(",");
+        const mime = parts[0].match(/:(.*?);/)[1];
+        const binary = atob(parts[1]);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return new Blob([bytes], { type: mime });
+      }
+
+      function updateQRStats(rawLength, compressedLength, segmentsLength) {
+        document.getElementById("rawLength").textContent = String(rawLength);
+        document.getElementById("compressedLength").textContent = String(compressedLength);
+        document.getElementById("segmentCount").textContent = String(segmentsLength);
+      }
+
+      async function createQRCodeDataUrl(text, finalSize, errorLevel) {
+        return new Promise((resolve, reject) => {
+          const host = document.createElement("div");
+          host.style.position = "fixed";
+          host.style.left = "-99999px";
+          host.style.top = "0";
+          document.body.appendChild(host);
+
+          const padding = Math.max(48, Math.round(finalSize * 0.09765625));
+          const qrSize = Math.max(128, finalSize - padding * 2);
+
+          new QRCode(host, {
+            text,
+            width: qrSize,
+            height: qrSize,
+            typeNumber: 40,
+            correctLevel: QRCode.CorrectLevel[errorLevel],
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+          });
+
+          setTimeout(() => {
+            const canvas = host.querySelector("canvas");
+            const img = host.querySelector("img");
+            const source = canvas || img;
+
+            if (!source) {
+              document.body.removeChild(host);
+              reject(new Error("二维码生成失败"));
+              return;
+            }
+
+            const finalCanvas = document.createElement("canvas");
+            finalCanvas.width = finalSize;
+            finalCanvas.height = finalSize;
+            const ctx = finalCanvas.getContext("2d");
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, finalSize, finalSize);
+
+            const draw = () => {
+              ctx.drawImage(source, padding, padding, qrSize, qrSize);
+              resolve(finalCanvas.toDataURL("image/png"));
+              document.body.removeChild(host);
+            };
+
+            if (canvas) {
+              draw();
+              return;
+            }
+
+            const image = new Image();
+            image.onload = function () {
+              ctx.drawImage(image, padding, padding, qrSize, qrSize);
+              resolve(finalCanvas.toDataURL("image/png"));
+              document.body.removeChild(host);
+            };
+            image.onerror = () => {
+              document.body.removeChild(host);
+              reject(new Error("二维码生成失败"));
+            };
+            image.src = img.src;
+          }, 80);
+        });
+      }
+
+      function getCurrentQRInputValue() {
+        if (state.inputMode === "file") {
+          return state.filePayload;
+        }
+        return document.getElementById("qrTextInput").value;
+      }
+
+      async function generateQR() {
+        if (state.isGenerating) {
+          setQRStatus("\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801\uff0c\u8bf7\u7a0d\u5019\u3002");
+          return;
+        }
+        const payload = getCurrentQRInputValue();
+        const qrSize = parseInt(state.qrSize, 10);
+        const errorLevel = state.qrEcc;
+        const token = ++state.generationToken;
+        state.isGenerating = true;
+
+        state.qrImages = [];
+        setBatchDownloadEnabled(false);
+        setShowQrEnabled(false);
+        setShowCompressedEnabled(false);
+
+        if (!payload.trim()) {
+          setQRStatus("请先选择文件或输入文本。");
+          updateQRStats(0, 0, 0);
+          state.isGenerating = false;
+          return;
+        }
+
+        if (payload.length > MAX_PAYLOAD_CHARS) {
+          updateQRStats(payload.length, 0, 0);
+          setQRStatus(
+            `\u8f93\u5165\u5185\u5bb9\u8fc7\u5927\uff08${payload.length}\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB \u751f\u6210\u3002`
+          );
+          state.isGenerating = false;
+          return;
+        }
+
+        const compressed = LZString.compressToEncodedURIComponent(payload);
+        const maxLengthByLevel = {
+          L: 2000,
+          M: 1600,
+          Q: 1200,
+          H: 900,
+        };
+        const maxLength = maxLengthByLevel[errorLevel] || 1200;
+        const segments = [];
+        for (let i = 0; i < compressed.length; i += maxLength) {
+          segments.push(compressed.slice(i, i + maxLength));
+        }
+        if (segments.length > MAX_SEGMENT_COUNT) {
+          setQRStatus(
+            `\u9884\u8ba1\u4e8c\u7ef4\u7801 ${segments.length} \u5f20\uff0c\u8d85\u8fc7\u4e0a\u9650 ${MAX_SEGMENT_COUNT} \u5f20\uff0c\u5df2\u4e2d\u6b62\u751f\u6210\u3002`
+          );
+          updateQRStats(payload.length, compressed.length, segments.length);
+          state.isGenerating = false;
+          return;
+        }
+
+        state.compressed = "v2" + compressed;
+        updateQRStats(payload.length, compressed.length, segments.length);
+        setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 0 / ${segments.length}`);
+        setQRStatus(`正在生成二维码 0 / ${segments.length}`);
+        setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 0 / ${segments.length}`);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        for (let index = 0; index < segments.length; index++) {
+          if (token !== state.generationToken) {
+            state.isGenerating = false;
+            return;
+          }
+          const segmentText = `v3${index + 1}/${segments.length}|${segments[index]}`;
+          setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 ${index + 1} / ${segments.length}`);
+          setQRStatus(`正在生成二维码 ${index + 1} / ${segments.length}`);
+          setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 ${index + 1} / ${segments.length}`);
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          let dataUrl;
+          try {
+            dataUrl = await createQRCodeDataUrl(segmentText, qrSize, errorLevel);
+          } catch (error) {
+            state.isGenerating = false;
+            setQRStatus(`\u7b2c ${index + 1} \u5f20\u751f\u6210\u5931\u8d25\uff1a${error.message}`);
+            setQRStatus(`第 ${index + 1} 张生成失败：${error.message}`);
+            return;
+          }
+          if (token !== state.generationToken) {
+            state.isGenerating = false;
+            return;
+          }
+          state.qrImages.push({
+            name: `qrcode-${index + 1}-of-${segments.length}.png`,
+            dataUrl,
+          });
+          if ((index + 1) % 10 === 0 || index === segments.length - 1) {
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+          }
+        }
+        setQRStatus(`生成成功，共 ${segments.length} 张二维码，点击“显示二维码”查看。`);
+        if (token !== state.generationToken) {
+          state.isGenerating = false;
+          return;
+        }
+        state.isGenerating = false;
+        setQRStatus(`\u751f\u6210\u6210\u529f\uff0c\u5171 ${segments.length} \u5f20\u4e8c\u7ef4\u7801\uff0c\u70b9\u51fb\u201c\u663e\u793a\u4e8c\u7ef4\u7801\u201d\u67e5\u770b\u3002`);
+        setBatchDownloadEnabled(state.qrImages.length > 0);
+        setShowQrEnabled(state.qrImages.length > 0);
+        setShowCompressedEnabled(Boolean(state.compressed));
+      }
+
+      async function downloadAllQRZip() {
+        if (!state.qrImages.length) return;
+
+        if (state.qrImages.length === 1) {
+          const only = state.qrImages[0];
+          downloadFile(only.dataUrl, only.name);
+          return;
+        }
+
+        const zip = new JSZip();
+        state.qrImages.forEach((item) => {
+          zip.file(item.name, dataURLtoBlob(item.dataUrl));
+        });
+
+        const blob = await zip.generateAsync({ type: "blob" });
+        downloadBlob(blob, "qrcode-images.zip");
+      }
+
+      function openQrGallery() {
+        if (!state.qrImages.length) return;
+
+        const gallery = document.createElement("div");
+        gallery.className = "qr-gallery";
+
+        state.qrImages.forEach((item, index) => {
+          const tile = document.createElement("div");
+          tile.className = "qr-gallery-item";
+
+          const img = document.createElement("img");
+          img.alt = item.name;
+          img.src = item.dataUrl;
+          tile.appendChild(img);
+
+          const caption = document.createElement("div");
+          caption.className = "caption";
+          caption.textContent = `第 ${index + 1} 张`;
+          tile.appendChild(caption);
+          caption.textContent = `\u7b2c ${index + 1} \u5f20`;
+
+          const singleDownload = document.createElement("button");
+          singleDownload.type = "button";
+          singleDownload.className = "btn btn-secondary qr-download-btn";
+          singleDownload.textContent = "\u4e0b\u8f7d\u6b64\u56fe";
+          singleDownload.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            downloadFile(item.dataUrl, item.name);
+          });
+          tile.appendChild(singleDownload);
+
+          gallery.appendChild(tile);
+        });
+
+        openModal("二维码列表", gallery);
+      }
+
+      function previewCompressedResult() {
+        if (!state.compressed) return;
+        const wrap = document.createElement("div");
+        const actions = document.createElement("div");
+        actions.className = "toolbar";
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "btn btn-secondary";
+        copyBtn.textContent = "\u590d\u5236\u7ed3\u679c";
+        copyBtn.addEventListener("click", async () => {
+          const originalText = copyBtn.textContent;
+          try {
+            await copyText(state.compressed);
+            copyBtn.textContent = "\u5df2\u590d\u5236";
+          } catch (error) {
+            copyBtn.textContent = "\u590d\u5236\u5931\u8d25";
+          }
+          setTimeout(() => {
+            copyBtn.textContent = originalText;
+          }, 1200);
+        });
+        actions.appendChild(copyBtn);
+        wrap.appendChild(actions);
+        const pre = document.createElement("pre");
+        pre.className = "modal-pre";
+        pre.textContent = state.compressed;
+        wrap.appendChild(pre);
+        openModal("压缩结果", wrap);
+      }
+
+      function decodePayload(input) {
+        const value = input.trim();
+        if (!value) {
+          throw new Error("请输入二维码内容");
+        }
+
+        if (!value.startsWith("v1") && !value.startsWith("v2") && !value.startsWith("v3")) {
+          try {
+            const decompressed = LZString.decompressFromEncodedURIComponent(value);
+            return { text: decompressed || value, canDownload: true };
+          } catch (error) {
+            return { text: value, canDownload: true };
+          }
+        }
+
+        const version = value.substring(0, 2);
+        const content = value.substring(2);
+
+        if (version === "v1") {
+          const base64 = content.replace(/-/g, "+").replace(/_/g, "/");
+          const binaryString = atob(base64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          const inflated = pako.inflate(bytes);
+          return { text: new TextDecoder().decode(inflated), canDownload: true };
+        }
+
+        if (version === "v2") {
+          return {
+            text: LZString.decompressFromEncodedURIComponent(content) || value,
+            canDownload: true,
+          };
+        }
+
+        if (version === "v3") {
+          let currentSegment;
+          let totalSegments;
+          let segmentData;
+
+          const sepIndex = content.indexOf("|");
+          if (sepIndex >= 0) {
+            const header = content.slice(0, sepIndex);
+            const parts = header.split("/");
+            if (parts.length !== 2) {
+              throw new Error("\u5206\u6bb5\u5934\u683c\u5f0f\u65e0\u6548");
+            }
+            currentSegment = parseInt(parts[0], 10);
+            totalSegments = parseInt(parts[1], 10);
+            segmentData = content.slice(sepIndex + 1);
+          } else {
+            // Legacy fixed-width v3 header: 2 digits current + 2 digits total.
+            currentSegment = parseInt(content.substring(0, 2), 10);
+            totalSegments = parseInt(content.substring(2, 4), 10);
+            segmentData = content.substring(4);
+          }
+
+          if (
+            !Number.isInteger(currentSegment) ||
+            !Number.isInteger(totalSegments) ||
+            currentSegment < 1 ||
+            totalSegments < 1 ||
+            currentSegment > totalSegments
+          ) {
+            throw new Error("\u5206\u6bb5\u4fe1\u606f\u65e0\u6548");
+          }
+
+          if (!state.segmentsData || state.expectedTotal !== totalSegments) {
+            state.segmentsData = new Array(totalSegments).fill(null);
+            state.expectedTotal = totalSegments;
+          }
+
+          state.segmentsData[currentSegment - 1] = segmentData;
+
+          const missing = state.segmentsData
+            .map((segment, index) => (segment === null ? index + 1 : null))
+            .filter((item) => item !== null);
+
+          if (missing.length > 0) {
+            return {
+              text: `已收到 ${totalSegments - missing.length} / ${totalSegments} 段，缺少：${missing.join(", ")}`,
+              canDownload: false,
+              segmentInfo: {
+                currentSegment,
+                totalSegments,
+                missing,
+              },
+            };
+          }
+
+          const fullData = state.segmentsData.join("");
+          const decoded = LZString.decompressFromEncodedURIComponent(fullData);
+          state.segmentsData = null;
+          state.expectedTotal = 0;
+          return {
+            text: decoded || fullData,
+            canDownload: true,
+            segmentInfo: {
+              currentSegment,
+              totalSegments,
+              missing: [],
+            },
+          };
+        }
+
+        return { text: value, canDownload: true };
+      }
+
+      function decodeTextInput() {
+        const input = document.getElementById("decodeText").value;
+        clearDecodeError();
+
+        try {
+          const decoded = decodePayload(input);
+          setDecodeResult(decoded.text, decoded.canDownload, decoded);
+          clearDecodeError();
+        } catch (error) {
+          setDecodeResult("解码失败", false);
+          setDecodeError(error.message);
+        }
+      }
+
+      function decodeImage(dataUrl) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = function () {
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            canvas.width = image.width;
+            canvas.height = image.height;
+            context.drawImage(image, 0, 0);
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+            if (code) {
+              resolve(code.data);
+            } else {
+              reject(new Error("未识别到二维码"));
+            }
+          };
+          image.onerror = () => reject(new Error("图片加载失败"));
+          image.src = dataUrl;
+        });
+      }
+
+      async function handleDecodeFiles(files) {
+        if (!files || !files.length) return;
+        clearDecodeError();
+        state.segmentsData = null;
+        state.expectedTotal = 0;
+
+        const dropZoneEl = document.getElementById("dropZone");
+        const list = document.getElementById("decodeDropList");
+        const fileList = Array.from(files);
+        list.innerHTML = "";
+        list.classList.remove("hidden");
+        dropZoneEl.classList.add("has-items");
+
+        for (let index = 0; index < fileList.length; index++) {
+          const file = fileList[index];
+          const item = document.createElement("div");
+          item.className = "dropzone-item";
+
+          const status = document.createElement("div");
+          status.className = "decode-item-status";
+          status.textContent = `正在解码 (${index + 1}/${fileList.length})`;
+          item.appendChild(status);
+          status.classList.add("decode-item-bar");
+          status.textContent = `\u6b63\u5728\u89e3\u7801 (${index + 1}/${fileList.length})`;
+
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "decode-item-remove";
+          removeBtn.textContent = "\u00d7";
+          removeBtn.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            item.remove();
+            if (!list.children.length) {
+              clearDecodeDropList();
+            }
+          });
+          item.appendChild(removeBtn);
+
+          list.appendChild(item);
+
+          try {
+            const dataUrl = await readFileAsDataURL(file);
+            const decoded = await decodeImage(dataUrl);
+            const text = decodePayload(decoded);
+            document.getElementById("decodeText").value = decoded;
+            setDecodeResult(text.text, text.canDownload, text);
+            status.textContent = text.canDownload
+              ? `解码成功 (${index + 1}/${fileList.length})`
+              : `解码进行中 (${index + 1}/${fileList.length})`;
+            status.classList.toggle("success", text.canDownload);
+            if (text.canDownload) {
+              status.textContent = `\u89e3\u7801\u6210\u529f (${index + 1}/${fileList.length})`;
+            } else {
+              status.textContent = `\u89e3\u7801\u8fdb\u884c\u4e2d (${index + 1}/${fileList.length})`;
+            }
+            if (text.segmentInfo) {
+              status.textContent = `\u89e3\u7801\u6210\u529f (${text.segmentInfo.currentSegment}/${text.segmentInfo.totalSegments})`;
+              status.classList.add("success");
+            }
+            status.classList.remove("error");
+            clearDecodeError();
+          } catch (error) {
+            setDecodeResult("解码失败", false);
+            setDecodeError(error.message);
+            setDecodeResult("\u89e3\u7801\u5931\u8d25", false);
+            status.textContent = `解码失败 (${index + 1}/${fileList.length})`;
+            status.classList.add("error");
+            status.textContent = `\u89e3\u7801\u5931\u8d25 (${index + 1}/${fileList.length})`;
+          }
+        }
+      }
+
+      function downloadDecodedFile() {
+        if (!state.decodedCanDownload || !state.decodedPayload) return;
+
+        try {
+          const parsed = JSON.parse(state.decodedPayload);
+          if (parsed && parsed.dataurl && parsed.filename) {
+            downloadBlob(dataURLtoBlob(parsed.dataurl), parsed.filename);
+            return;
+          }
+        } catch (error) {
+          // Fallback to plain text.
+        }
+
+        downloadBlob(
+          new Blob([state.decodedPayload], { type: "text/plain;charset=utf-8" }),
+          "decoded.txt"
+        );
+      }
+
+      function previewDecodedResult() {
+        if (!state.decodedPayload) return;
+        const wrap = document.createElement("div");
+        const pre = document.createElement("pre");
+        pre.className = "modal-pre";
+        pre.textContent = state.decodedPayload;
+        wrap.appendChild(pre);
+        openModal("解码结果预览", wrap);
+      }
+
+      const dropZone = document.getElementById("dropZone");
+      const qrImageInput = document.getElementById("qrImageInput");
+
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add("dragover"));
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove("dragover"));
+      });
+
+      dropZone.addEventListener("drop", (event) => {
+        handleDecodeFiles(event.dataTransfer.files);
+      });
+
+      qrImageInput.addEventListener("change", (event) => {
+        handleDecodeFiles(event.target.files);
+        event.target.value = "";
+      });
+
+      const modal = document.getElementById("modal");
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeModal();
+        }
+      });
+
+      setBatchDownloadEnabled(false);
+      setShowQrEnabled(false);
+      setShowCompressedEnabled(false);
+      setDecodedDownloadEnabled(false);
+      clearDecodeDropList();
+      updateQRStats(0, 0, 0);
+      setOptionChip("size", state.qrSize);
+      setOptionChip("ecc", state.qrEcc);
+      reorderActionButtons();
+      switchQRInputMode("file");
+    </script>
+  </body>
+</html>
