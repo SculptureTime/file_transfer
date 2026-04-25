@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -236,6 +236,12 @@
       .btn:disabled {
         cursor: not-allowed;
         opacity: 0.5;
+        transform: none;
+      }
+
+      .btn.loading {
+        cursor: wait;
+        opacity: 0.78;
         transform: none;
       }
 
@@ -808,7 +814,7 @@
             </div>
 
             <div class="toolbar">
-              <button class="btn btn-primary" onclick="generateQR()">生成二维码</button>
+              <button id="generateBtn" class="btn btn-primary" onclick="generateQR()">生成二维码</button>
               <button id="batchDownloadBtn" class="btn btn-secondary" onclick="downloadAllQRZip()" disabled>批量下载</button>
               <button class="btn btn-danger" onclick="clearQRGenerator()">清空</button>
               <button id="showCompressedBtn" class="btn btn-secondary" onclick="previewCompressedResult()" disabled>压缩结果</button>
@@ -865,7 +871,7 @@
             <h3>文本解码</h3>
             <textarea id="decodeText" placeholder="粘贴二维码文本、压缩内容或 v1/v2/v3/v4/v5 编码"></textarea>
             <div class="toolbar">
-              <button class="btn btn-primary" onclick="decodeTextInput()">解码</button>
+              <button id="decodeTextBtn" class="btn btn-primary" onclick="decodeTextInput()">解码</button>
               <button class="btn btn-secondary" onclick="resetDecodeState()">重置</button>
               <button class="btn btn-secondary" onclick="previewDecodedResult()">解码结果</button>
               <button id="downloadDecodedBtn" class="btn btn-secondary" onclick="downloadDecodedFile()" disabled>下载文件</button>
@@ -912,6 +918,8 @@
         decodedPayload: "",
         decodedCanDownload: false,
         decodedFile: null,
+        isDecoding: false,
+        decodeToken: 0,
       };
       const MAX_FILE_SIZE_MB = 20;
       const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -919,6 +927,138 @@
       const MAX_TEXT_SIZE_BYTES = MAX_FILE_SIZE_BYTES;
       const MAX_COMPRESSED_PREVIEW_BYTES = 2 * 1024 * 1024;
       const MAX_SEGMENT_COUNT = 10000;
+      const qrWorkers = [];
+      const qrWorkerPending = new Map();
+      let qrWorkerReady = false;
+      let qrWorkerBootTried = false;
+      let qrWorkerReqId = 1;
+
+      function getWorkerPoolSize() {
+        const hc =
+          typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
+            ? navigator.hardwareConcurrency
+            : 4;
+        return Math.max(2, Math.min(8, hc > 2 ? hc - 1 : hc));
+      }
+
+      function onWorkerMessage(workerState, event) {
+        const data = event && event.data ? event.data : {};
+        const pending = qrWorkerPending.get(data.id);
+        if (!pending) return;
+        qrWorkerPending.delete(data.id);
+        workerState.pendingCount = Math.max(0, workerState.pendingCount - 1);
+        if (data.ok) {
+          pending.resolve(data.result);
+        } else {
+          pending.reject(new Error(data.error || "worker_error"));
+        }
+      }
+
+      function onWorkerError(workerState, error) {
+        workerState.alive = false;
+        workerState.pendingCount = 0;
+        qrWorkerReady = qrWorkers.some((item) => item.alive);
+        const failedIds = [];
+        qrWorkerPending.forEach((pending, id) => {
+          if (pending.workerState === workerState) {
+            failedIds.push(id);
+            pending.reject(error instanceof Error ? error : new Error("worker_crashed"));
+          }
+        });
+        failedIds.forEach((id) => qrWorkerPending.delete(id));
+      }
+
+      function ensureQrWorker() {
+        if (qrWorkerReady && qrWorkers.length > 0) return true;
+        if (qrWorkers.length > 0 && !qrWorkerReady) {
+          qrWorkers.forEach((item) => {
+            try {
+              item.worker.terminate();
+            } catch (error) {
+              // ignore
+            }
+          });
+          qrWorkers.length = 0;
+        }
+        qrWorkerBootTried = true;
+        try {
+          const size = getWorkerPoolSize();
+          for (let i = 0; i < size; i++) {
+            const worker = new Worker("./js/qr-worker-v2.js");
+            const workerState = {
+              worker,
+              alive: true,
+              pendingCount: 0,
+            };
+            worker.onmessage = (event) => onWorkerMessage(workerState, event);
+            worker.onerror = (error) => onWorkerError(workerState, error);
+            qrWorkers.push(workerState);
+          }
+          qrWorkerReady = qrWorkers.length > 0;
+          return qrWorkerReady;
+        } catch (error) {
+          qrWorkers.length = 0;
+          qrWorkerReady = false;
+          return false;
+        }
+      }
+
+      function pickWorker() {
+        let selected = null;
+        for (const workerState of qrWorkers) {
+          if (!workerState.alive) continue;
+          if (!selected || workerState.pendingCount < selected.pendingCount) {
+            selected = workerState;
+          }
+        }
+        return selected;
+      }
+
+      function workerCall(type, payload, transferables = []) {
+        if (!(qrWorkerReady || ensureQrWorker())) {
+          return Promise.reject(new Error("worker_unavailable"));
+        }
+        const workerState = pickWorker();
+        if (!workerState) {
+          return Promise.reject(new Error("worker_unavailable"));
+        }
+        const id = qrWorkerReqId++;
+        return new Promise((resolve, reject) => {
+          qrWorkerPending.set(id, { resolve, reject, workerState });
+          workerState.pendingCount += 1;
+          workerState.worker.postMessage({ id, type, payload }, transferables);
+        });
+      }
+
+      function getWorkerModeText() {
+        if (!qrWorkerReady) {
+          ensureQrWorker();
+        }
+        const alive = qrWorkers.filter((workerState) => workerState.alive).length;
+        return alive > 0 ? `Worker并发${alive}线程` : "单线程";
+      }
+
+      function setButtonLoading(buttonOrId, loading, loadingText = "") {
+        const button = typeof buttonOrId === "string" ? document.getElementById(buttonOrId) : buttonOrId;
+        if (!button) return;
+        if (loading) {
+          if (button.dataset.loading === "1") return;
+          button.dataset.loading = "1";
+          button.dataset.originalText = button.textContent || "";
+          button.dataset.wasDisabled = button.disabled ? "1" : "0";
+          if (loadingText) button.textContent = loadingText;
+          button.disabled = true;
+          button.classList.add("loading");
+          return;
+        }
+        if (button.dataset.loading === "1") {
+          button.textContent = button.dataset.originalText || button.textContent;
+          const wasDisabled = button.dataset.wasDisabled === "1";
+          button.disabled = wasDisabled;
+          button.dataset.loading = "0";
+          button.classList.remove("loading");
+        }
+      }
 
       function switchTab(tabId) {
         document.querySelectorAll(".tab").forEach((tab) => {
@@ -980,8 +1120,7 @@
           if (canDownload) {
             displayText = `\u89e3\u7801\u6210\u529f (${info.totalSegments}/${info.totalSegments})`;
           } else {
-            const missingText = info.missing && info.missing.length ? info.missing.join(", ") : "\u65e0";
-            displayText = `\u89e3\u7801\u6210\u529f (${info.currentSegment}/${info.totalSegments})\uff0c\u7f3a\u5c11\uff1a${missingText}`;
+            displayText = `\u89e3\u7801\u6210\u529f (${info.currentSegment}/${info.totalSegments})`;
           }
         } else if (canDownload) {
           displayText = "\u89e3\u7801\u6210\u529f\uff0c\u70b9\u51fb\u201c\u89e3\u7801\u7ed3\u679c\u201d\u67e5\u770b\u3002";
@@ -1435,6 +1574,8 @@
       }
 
       function resetDecodeState() {
+        state.decodeToken += 1;
+        state.isDecoding = false;
         state.segmentsData = null;
         state.expectedTotal = 0;
         state.segmentMeta = null;
@@ -1610,20 +1751,25 @@
 
       async function downloadAllQRZip() {
         if (!state.qrImages.length) return;
+        const batchBtn = document.getElementById("batchDownloadBtn");
+        setButtonLoading(batchBtn, true, "下载中...");
+        try {
+          if (state.qrImages.length === 1) {
+            const only = state.qrImages[0];
+            downloadFile(only.dataUrl, only.name);
+            return;
+          }
 
-        if (state.qrImages.length === 1) {
-          const only = state.qrImages[0];
-          downloadFile(only.dataUrl, only.name);
-          return;
+          const zip = new JSZip();
+          state.qrImages.forEach((item) => {
+            zip.file(item.name, dataURLtoBlob(item.dataUrl));
+          });
+
+          const blob = await zip.generateAsync({ type: "blob" });
+          downloadBlob(blob, "qrcode-images.zip");
+        } finally {
+          setButtonLoading(batchBtn, false);
         }
-
-        const zip = new JSZip();
-        state.qrImages.forEach((item) => {
-          zip.file(item.name, dataURLtoBlob(item.dataUrl));
-        });
-
-        const blob = await zip.generateAsync({ type: "blob" });
-        downloadBlob(blob, "qrcode-images.zip");
       }
 
       function openQrGallery() {
@@ -1694,6 +1840,8 @@
       }
 
       function decodeTextInput() {
+        const decodeBtn = document.getElementById("decodeTextBtn");
+        setButtonLoading(decodeBtn, true, "解码中...");
         const input = document.getElementById("decodeText").value;
         clearDecodeError();
 
@@ -1704,6 +1852,8 @@
         } catch (error) {
           setDecodeResult("解码失败", false);
           setDecodeError(error.message);
+        } finally {
+          setButtonLoading(decodeBtn, false);
         }
       }
 
@@ -1745,11 +1895,77 @@
         );
       }
 
+      async function renderQrFromMatrixToDataUrl(matrixBuffer, moduleCount, finalSize) {
+        return new Promise((resolve, reject) => {
+          const matrix = new Uint8Array(matrixBuffer);
+          const padding = Math.max(48, Math.round(finalSize * 0.09765625));
+          const qrArea = Math.max(128, finalSize - padding * 2);
+          const cell = Math.max(1, Math.floor(qrArea / moduleCount));
+          const drawSize = cell * moduleCount;
+          const offsetX = Math.floor((finalSize - drawSize) / 2);
+          const offsetY = Math.floor((finalSize - drawSize) / 2);
+
+          const canvas = document.createElement("canvas");
+          canvas.width = finalSize;
+          canvas.height = finalSize;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("二维码生成失败"));
+            return;
+          }
+
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, finalSize, finalSize);
+          ctx.fillStyle = "#000000";
+          let idx = 0;
+          for (let r = 0; r < moduleCount; r++) {
+            for (let c = 0; c < moduleCount; c++) {
+              if (matrix[idx++] === 1) {
+                ctx.fillRect(offsetX + c * cell, offsetY + r * cell, cell, cell);
+              }
+            }
+          }
+          resolve(canvas.toDataURL("image/png"));
+        });
+      }
+
       async function createQRCodeDataUrl(payload, finalSize, errorLevel) {
+        const payloadBytes =
+          payload instanceof Uint8Array ? payload : new TextEncoder().encode(String(payload || ""));
+        if (qrWorkerReady || ensureQrWorker()) {
+          try {
+            const payloadBuffer = payloadBytes.buffer.slice(
+              payloadBytes.byteOffset,
+              payloadBytes.byteOffset + payloadBytes.byteLength
+            );
+            const workerResult = await workerCall(
+              "renderQr",
+              { payloadBuffer, finalSize, errorLevel },
+              [payloadBuffer]
+            );
+            if (workerResult && workerResult.kind === "png" && workerResult.pngBuffer) {
+              const blob = new Blob([workerResult.pngBuffer], { type: "image/png" });
+              return await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error("二维码生成失败"));
+                reader.readAsDataURL(blob);
+              });
+            }
+            if (workerResult && workerResult.kind === "matrix" && workerResult.matrixBuffer) {
+              return await renderQrFromMatrixToDataUrl(
+                workerResult.matrixBuffer,
+                workerResult.moduleCount,
+                finalSize
+              );
+            }
+          } catch (error) {
+            // fallback to main thread
+          }
+        }
+
         return new Promise((resolve, reject) => {
           try {
-            const payloadBytes =
-              payload instanceof Uint8Array ? payload : new TextEncoder().encode(String(payload || ""));
             const qr = qrcode(0, errorLevel);
             qr.addData(bytesToBinaryString(payloadBytes), "Byte");
             qr.make();
@@ -1777,10 +1993,9 @@
                 }
               }
             }
-
             resolve(canvas.toDataURL("image/png"));
           } catch (error) {
-            reject(error instanceof Error ? error : new Error("\u4e8c\u7ef4\u7801\u751f\u6210\u5931\u8d25"));
+            reject(error instanceof Error ? error : new Error("二维码生成失败"));
           }
         });
       }
@@ -1796,6 +2011,8 @@
         const qrSize = parseInt(state.qrSize, 10);
         const errorLevel = state.qrEcc;
         const token = ++state.generationToken;
+        const generateBtn = document.getElementById("generateBtn");
+        setButtonLoading(generateBtn, true, "生成中...");
         state.isGenerating = true;
 
         state.qrImages = [];
@@ -1808,12 +2025,14 @@
             setQRStatus("\u8bf7\u5148\u9009\u62e9\u6587\u4ef6\u3002");
             updateQRStats(0, 0, 0);
             state.isGenerating = false;
+            setButtonLoading(generateBtn, false);
             return;
           }
           if (payload.length > MAX_FILE_SIZE_BYTES) {
             setQRStatus(`\u6587\u4ef6\u8fc7\u5927\uff08${payload.length} \u5b57\u8282\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB\u3002`);
             updateQRStats(payload.length, 0, 0);
             state.isGenerating = false;
+            setButtonLoading(generateBtn, false);
             return;
           }
         } else {
@@ -1821,6 +2040,7 @@
             setQRStatus("\u8bf7\u8f93\u5165\u6587\u672c\u3002");
             updateQRStats(0, 0, 0);
             state.isGenerating = false;
+            setButtonLoading(generateBtn, false);
             return;
           }
           const textBytes = new TextEncoder().encode(payload);
@@ -1828,6 +2048,7 @@
             setQRStatus(`\u8f93\u5165\u6587\u672c\u8fc7\u5927\uff08${textBytes.length} \u5b57\u8282\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB\u3002`);
             updateQRStats(textBytes.length, 0, 0);
             state.isGenerating = false;
+            setButtonLoading(generateBtn, false);
             return;
           }
         }
@@ -1838,6 +2059,7 @@
         } catch (error) {
           state.isGenerating = false;
           setQRStatus(`\u9884\u5904\u7406\u5931\u8d25\uff1a${error.message}`);
+          setButtonLoading(generateBtn, false);
           return;
         }
 
@@ -1852,49 +2074,62 @@
           setQRStatus(`\u9884\u8ba1\u4e8c\u7ef4\u7801 ${segments.length} \u5f20\uff0c\u8d85\u8fc7\u4e0a\u9650 ${MAX_SEGMENT_COUNT} \u5f20\uff0c\u5df2\u4e2d\u6b62\u751f\u6210\u3002`);
           updateQRStats(transmission.rawLength, transmission.processedLength, segments.length);
           state.isGenerating = false;
+          setButtonLoading(generateBtn, false);
           return;
         }
 
         state.compressed = transmission.combined;
         updateQRStats(transmission.rawLength, transmission.processedLength, segments.length);
-        setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 0 / ${segments.length}`);
+        setQRStatus(`正在生成二维码 0 / ${segments.length}（${getWorkerModeText()}）`);
         await new Promise((resolve) => requestAnimationFrame(resolve));
 
-        for (let index = 0; index < segments.length; index++) {
-          if (token !== state.generationToken) {
-            state.isGenerating = false;
-            return;
+        const outputImages = new Array(segments.length);
+        let nextIndex = 0;
+        let completed = 0;
+        let failed = null;
+        const maxConcurrent =
+          qrWorkerReady && qrWorkers.length > 0
+            ? Math.max(2, Math.min(qrWorkers.length, 8))
+            : 1;
+
+        const runners = Array.from({ length: maxConcurrent }, async () => {
+          while (true) {
+            if (token !== state.generationToken || failed) return;
+            const index = nextIndex++;
+            if (index >= segments.length) return;
+            try {
+              const dataUrl = await createQRCodeDataUrl(segments[index], qrSize, errorLevel);
+              if (token !== state.generationToken) return;
+              outputImages[index] = {
+                name: `qrcode-${index + 1}-of-${segments.length}.png`,
+                dataUrl,
+              };
+              completed += 1;
+              if (completed === 1 || completed === segments.length || completed % 4 === 0) {
+                setQRStatus(`正在生成二维码 ${completed} / ${segments.length}（${getWorkerModeText()}）`);
+              }
+              if (completed % 24 === 0) {
+                await new Promise((resolve) => requestAnimationFrame(resolve));
+              }
+            } catch (error) {
+              failed = { index, error };
+              return;
+            }
           }
+        });
+        await Promise.all(runners);
 
-          setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 ${index + 1} / ${segments.length}`);
-          await new Promise((resolve) => setTimeout(resolve, 0));
-
-          let dataUrl;
-          try {
-            dataUrl = await createQRCodeDataUrl(segments[index], qrSize, errorLevel);
-          } catch (error) {
-            state.isGenerating = false;
-            setQRStatus(`\u7b2c ${index + 1} \u5f20\u751f\u6210\u5931\u8d25\uff1a${error.message}`);
-            return;
-          }
-
-          if (token !== state.generationToken) {
-            state.isGenerating = false;
-            return;
-          }
-
-          state.qrImages.push({
-            name: `qrcode-${index + 1}-of-${segments.length}.png`,
-            dataUrl,
-          });
-
-          if ((index + 1) % 8 === 0 || index === segments.length - 1) {
-            await new Promise((resolve) => requestAnimationFrame(resolve));
-          }
+        if (failed) {
+          state.isGenerating = false;
+          setQRStatus(`第 ${failed.index + 1} 张生成失败：${failed.error.message}`);
+          setButtonLoading(generateBtn, false);
+          return;
         }
+        state.qrImages = outputImages.filter(Boolean);
 
         if (token !== state.generationToken) {
           state.isGenerating = false;
+          setButtonLoading(generateBtn, false);
           return;
         }
 
@@ -1906,19 +2141,51 @@
               ? "\u81ea\u52a8\u538b\u7f29"
               : "\u672a\u538b\u7f29";
         setQRStatus(
-          `\u751f\u6210\u6210\u529f\uff0c\u5171 ${segments.length} \u5f20\u4e8c\u7ef4\u7801\u3002\u7b56\u7565${strategyText}\uff0c\u5904\u7406\u540e ${transmission.processedLength} \u5b57\u8282\u3002`
+          `生成成功，共 ${segments.length} 张二维码。策略${strategyText}，处理后 ${transmission.processedLength} 字节（${getWorkerModeText()}）。`
         );
         setBatchDownloadEnabled(state.qrImages.length > 0);
         setShowQrEnabled(state.qrImages.length > 0);
         setShowCompressedEnabled(Boolean(state.compressed));
+        setButtonLoading(generateBtn, false);
       }
 
-      function decodeImage(dataUrl) {
+      async function decodeImageFile(file) {
+        const fileBuffer = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target.result);
+          reader.onerror = () => reject(new Error("文件读取失败"));
+          reader.readAsArrayBuffer(file);
+        });
+
+        if (qrWorkerReady || ensureQrWorker()) {
+          try {
+            const transferBuffer = fileBuffer.slice(0);
+            const workerResult = await workerCall(
+              "scanQrFile",
+              { fileBuffer: transferBuffer },
+              [transferBuffer]
+            );
+            return {
+              text: workerResult.text || "",
+              bytes: workerResult.binaryBuffer ? new Uint8Array(workerResult.binaryBuffer) : null,
+            };
+          } catch (error) {
+            // fallback to main thread
+          }
+        }
+
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target.result);
+          reader.onerror = () => reject(new Error("图片加载失败"));
+          reader.readAsDataURL(file);
+        });
+
         return new Promise((resolve, reject) => {
           const image = new Image();
           image.onload = function () {
             const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d");
+            const context = canvas.getContext("2d", { willReadFrequently: true });
             canvas.width = image.width;
             canvas.height = image.height;
             context.drawImage(image, 0, 0);
@@ -1926,7 +2193,7 @@
             const code = jsQR(imageData.data, imageData.width, imageData.height);
 
             if (!code) {
-              reject(new Error("\u672a\u8bc6\u522b\u5230\u4e8c\u7ef4\u7801"));
+              reject(new Error("未识别到二维码"));
               return;
             }
 
@@ -1935,13 +2202,15 @@
               bytes: code.binaryData ? new Uint8Array(code.binaryData) : null,
             });
           };
-          image.onerror = () => reject(new Error("\u56fe\u7247\u52a0\u8f7d\u5931\u8d25"));
+          image.onerror = () => reject(new Error("图片加载失败"));
           image.src = dataUrl;
         });
       }
 
       async function handleDecodeFiles(files) {
         if (!files || !files.length) return;
+        const token = ++state.decodeToken;
+        state.isDecoding = true;
 
         clearDecodeError();
         state.segmentsData = null;
@@ -1956,8 +2225,8 @@
         list.classList.remove("hidden");
         dropZoneEl.classList.add("has-items");
 
+        const statusNodes = [];
         for (let index = 0; index < fileList.length; index++) {
-          const file = fileList[index];
           const item = document.createElement("div");
           item.className = "dropzone-item";
 
@@ -1980,34 +2249,56 @@
           });
           item.appendChild(removeBtn);
           list.appendChild(item);
+          statusNodes.push(status);
+        }
 
-          try {
-            const dataUrl = await readFileAsDataURL(file);
-            const decodedImage = await decodeImage(dataUrl);
-            const decoded = decodePayload(decodedImage.bytes || decodedImage.text);
-            if (decodedImage.text) {
-              document.getElementById("decodeText").value = decodedImage.text;
-            }
-            setDecodeResult(decoded.text, decoded.canDownload, decoded);
+        let nextIndex = 0;
+        const maxConcurrent =
+          qrWorkerReady && qrWorkers.length > 0
+            ? Math.max(2, Math.min(qrWorkers.length, 8))
+            : 1;
 
-            const info = decoded.segmentInfo;
-            if (info) {
-              status.textContent = `解码成功 (${info.currentSegment}/${info.totalSegments})`;
-            } else if (decoded.canDownload) {
-              status.textContent = `解码成功 (${index + 1}/${fileList.length})`;
-            } else {
-              status.textContent = `\u89e3\u7801\u8fdb\u884c\u4e2d (${index + 1}/${fileList.length})`;
+        const runners = Array.from({ length: maxConcurrent }, async () => {
+          while (true) {
+            if (token !== state.decodeToken) return;
+            const index = nextIndex++;
+            if (index >= fileList.length) return;
+            const file = fileList[index];
+            const status = statusNodes[index];
+            try {
+              const decodedImage = await decodeImageFile(file);
+              if (token !== state.decodeToken) return;
+              const decoded = decodePayload(decodedImage.bytes || decodedImage.text);
+              if (token !== state.decodeToken) return;
+              if (decodedImage.text) {
+                document.getElementById("decodeText").value = decodedImage.text;
+              }
+              setDecodeResult(decoded.text, decoded.canDownload, decoded);
+
+              const info = decoded.segmentInfo;
+              if (info) {
+                status.textContent = `解码成功 (${info.currentSegment}/${info.totalSegments})`;
+              } else if (decoded.canDownload) {
+                status.textContent = `解码成功 (${index + 1}/${fileList.length})`;
+              } else {
+                status.textContent = `\u89e3\u7801\u8fdb\u884c\u4e2d (${index + 1}/${fileList.length})`;
+              }
+              status.classList.toggle("success", Boolean(info) || decoded.canDownload);
+              status.classList.remove("error");
+              clearDecodeError();
+            } catch (error) {
+              if (token !== state.decodeToken) return;
+              setDecodeResult("解码失败", false);
+              setDecodeError(error.message);
+              status.textContent = `解码失败 (${index + 1}/${fileList.length})`;
+              status.classList.remove("success");
+              status.classList.add("error");
             }
-            status.classList.toggle("success", Boolean(info) || decoded.canDownload);
-            status.classList.remove("error");
-            clearDecodeError();
-          } catch (error) {
-            setDecodeResult("解码失败", false);
-            setDecodeError(error.message);
-            status.textContent = `解码失败 (${index + 1}/${fileList.length})`;
-            status.classList.remove("success");
-            status.classList.add("error");
           }
+        });
+        await Promise.all(runners);
+        if (token === state.decodeToken) {
+          state.isDecoding = false;
         }
       }
 
@@ -2046,7 +2337,7 @@
 
           if (missing.length > 0) {
             return {
-              text: `\u5df2\u63a5\u6536 ${v5Frame.total - missing.length} / ${v5Frame.total} \u6bb5\uff0c\u7f3a\u5c11\uff1a${missing.join(", ")}`,
+              text: `\u5df2\u63a5\u6536 ${v5Frame.total - missing.length} / ${v5Frame.total} \u6bb5`,
               canDownload: false,
               segmentInfo: {
                 currentSegment: v5Frame.current,
@@ -2195,6 +2486,7 @@
       reorderActionButtons();
       switchQRInputMode("file");
       syncCompressionControls();
+      ensureQrWorker();
     </script>
   </body>
 </html>
