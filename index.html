@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>数据传输工具箱</title>
     <script src="./js/qrcode.min.js"></script>
+    <script src="./js/qrcode-generator.min.js"></script>
     <script src="./js/lz-string.min.js"></script>
     <script src="./js/pako.min.js"></script>
     <script src="./js/jsQR.min.js"></script>
@@ -261,6 +262,14 @@
         resize: vertical;
       }
 
+      #qrTextInput {
+        min-height: 190px;
+        height: 190px;
+        max-height: 190px;
+        resize: none;
+        overflow: auto;
+      }
+
       .hint {
         margin-top: 8px;
         color: var(--muted);
@@ -308,7 +317,9 @@
         border-radius: 18px;
         background: rgba(255, 255, 255, 0.03);
         padding: 16px;
-        min-height: 180px;
+        height: 190px;
+        min-height: 190px;
+        max-height: 190px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -330,6 +341,18 @@
         margin-bottom: 6px;
       }
 
+      .dropzone-preview-inline {
+        width: 100%;
+        margin-top: 10px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(5, 9, 14, 0.92);
+        padding: 12px 14px;
+        text-align: center;
+        white-space: pre-line;
+        color: var(--text);
+      }
+
       .dropzone.has-items {
         justify-content: flex-start;
         align-items: stretch;
@@ -341,7 +364,7 @@
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
         gap: 10px;
-        max-height: 120px;
+        max-height: 132px;
         overflow: auto;
       }
 
@@ -447,7 +470,7 @@
 
       .qr-options {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 14px;
         margin-top: 16px;
       }
@@ -495,6 +518,12 @@
         border-color: transparent;
       }
 
+      .option-chip:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+      }
+
       .modal {
         position: fixed;
         inset: 0;
@@ -514,7 +543,7 @@
       .modal-card {
         width: min(860px, 100%);
         max-height: min(90vh, 900px);
-        overflow: auto;
+        overflow: hidden;
         background: rgba(22, 27, 34, 0.98);
         border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 24px;
@@ -549,6 +578,8 @@
 
       .modal-body {
         padding: 22px;
+        max-height: calc(90vh - 90px);
+        overflow: auto;
       }
 
       .modal-preview-image {
@@ -636,6 +667,9 @@
       .status {
         color: var(--muted);
         margin-top: 8px;
+        line-height: 1.5;
+        min-height: 24px;
+        padding-bottom: 2px;
       }
 
       .status.success {
@@ -664,6 +698,10 @@
         .file-preview {
           grid-template-columns: 1fr;
         }
+
+        .qr-options {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -687,17 +725,17 @@
 
       <nav class="tabs" aria-label="工具切换">
         <button class="tab active" data-tab="text-qr" onclick="switchTab('text-qr')">
-          文本转二维码
+          二维码生成
         </button>
         <button class="tab" data-tab="qr-decode" onclick="switchTab('qr-decode')">
-          二维码解码
+          二维码解析
         </button>
       </nav>
 
       <section id="text-qr" class="panel active">
         <div class="panel-header">
-          <h2>文本转二维码</h2>
-          <p>支持文件输入或手动文本输入，二维码生成后可批量打包下载。</p>
+          <h2>二维码生成</h2>
+          <p>支持文件输入或手动文本输入，二维码生成后可批量打包下载。当前限制：文件/文本最大 20MB，二维码最多 10000 张。</p>
         </div>
         <div class="panel-body grid">
           <div class="card">
@@ -709,14 +747,14 @@
                 onclick="document.getElementById('qrFileInput').click()"
               >
                 <strong>点击或拖拽文件到这里</strong>
-                <span class="small">文件会转换成 Base64 JSON 再生成二维码</span>
+                <span class="small">文件按原始字节处理，分片后直接生成二维码</span>
+                <div id="qrFilePreview" class="dropzone-preview-inline hidden"></div>
               </div>
               <input id="qrFileInput" type="file" class="hidden" />
               <div class="toolbar">
                 <button class="btn btn-primary" onclick="openQRFilePicker()">选择文件</button>
                 <button class="btn btn-secondary" onclick="switchQRInputMode('text')">输入文本</button>
               </div>
-              <div id="qrFilePreview" class="output preview-box">未选择文件。</div>
             </div>
 
             <div id="qrTextMode" class="hidden">
@@ -746,6 +784,27 @@
                   <button class="option-chip" type="button" data-value="H" onclick="setOptionChip('ecc', 'H')">最高</button>
                 </div>
               </div>
+              <div class="option-field">
+                <label>压缩策略</label>
+                <div class="option-chips" data-group="compress">
+                  <button
+                    id="compressAutoBtn"
+                    class="option-chip active"
+                    type="button"
+                    onclick="setCompressionMode('auto')"
+                  >
+                    自动判断
+                  </button>
+                  <button
+                    id="compressForceBtn"
+                    class="option-chip"
+                    type="button"
+                    onclick="setCompressionMode('force')"
+                  >
+                    强制压缩
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div class="toolbar">
@@ -765,7 +824,7 @@
                 <div class="value" id="rawLength">0</div>
               </div>
               <div class="stat">
-                <div class="label">压缩长度</div>
+                <div class="label">处理后长度</div>
                 <div class="value" id="compressedLength">0</div>
               </div>
               <div class="stat">
@@ -784,7 +843,7 @@
 
       <section id="qr-decode" class="panel">
         <div class="panel-header">
-          <h2>二维码解码</h2>
+          <h2>二维码解析</h2>
           <p>支持二维码图片和二维码文本解码，解码结果可直接下载。</p>
         </div>
         <div class="panel-body grid">
@@ -804,14 +863,14 @@
 
           <div class="card">
             <h3>文本解码</h3>
-            <textarea id="decodeText" placeholder="粘贴二维码文本、压缩内容或 v1/v2/v3 编码"></textarea>
+            <textarea id="decodeText" placeholder="粘贴二维码文本、压缩内容或 v1/v2/v3/v4/v5 编码"></textarea>
             <div class="toolbar">
               <button class="btn btn-primary" onclick="decodeTextInput()">解码</button>
               <button class="btn btn-secondary" onclick="resetDecodeState()">重置</button>
               <button class="btn btn-secondary" onclick="previewDecodedResult()">解码结果</button>
               <button id="downloadDecodedBtn" class="btn btn-secondary" onclick="downloadDecodedFile()" disabled>下载文件</button>
             </div>
-            <div class="hint">如果输入不是 v1/v2/v3 格式，系统会先尝试按压缩文本处理。</div>
+            <div class="hint">如果输入不是 v1/v2/v3/v4/v5 格式，系统会先尝试按压缩文本处理。</div>
           </div>
 
           <div class="card">
@@ -837,24 +896,29 @@
     <script>
       const state = {
         inputMode: "file",
-        filePayload: "",
-        fileName: "",
+        fileBytes: null,
+        fileMeta: null,
         textDraft: "",
         qrSize: "1024",
         qrEcc: "Q",
+        forceCompress: false,
         compressed: "",
         qrImages: [],
         isGenerating: false,
         generationToken: 0,
         segmentsData: null,
         expectedTotal: 0,
+        segmentMeta: null,
         decodedPayload: "",
         decodedCanDownload: false,
+        decodedFile: null,
       };
-      const MAX_FILE_SIZE_MB = 10;
+      const MAX_FILE_SIZE_MB = 20;
       const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+      const FILE_VOLUME_BYTES = 4 * 1024 * 1024;
+      const MAX_TEXT_SIZE_BYTES = MAX_FILE_SIZE_BYTES;
+      const MAX_COMPRESSED_PREVIEW_BYTES = 2 * 1024 * 1024;
       const MAX_SEGMENT_COUNT = 10000;
-      const MAX_PAYLOAD_CHARS = 16_000_000;
 
       function switchTab(tabId) {
         document.querySelectorAll(".tab").forEach((tab) => {
@@ -905,31 +969,22 @@
         error.classList.add("hidden");
       }
 
-      /*
-      function setDecodeResult(text, canDownload) {
-        state.decodedPayload = text;
-        state.decodedCanDownload = Boolean(canDownload);
-        const isProgress = typeof text === "string" && text.includes("已收到");
-        document.getElementById("decodeResult").textContent = canDownload
-          ? "解码成功，点击“解码结果”查看。"
-          : isProgress
-            ? "解码进行中"
-            : text || "解码失败";
-        setDecodedDownloadEnabled(canDownload);
-      }
-
-      */
       function setDecodeResult(text, canDownload, meta = null) {
         state.decodedPayload = text;
         state.decodedCanDownload = Boolean(canDownload);
+        state.decodedFile = meta && meta.decodedFile ? meta.decodedFile : null;
 
         let displayText = text || "\u89e3\u7801\u5931\u8d25";
-        if (canDownload) {
-          displayText = "\u89e3\u7801\u6210\u529f\uff0c\u70b9\u51fb\u89e3\u7801\u7ed3\u679c\u67e5\u770b\u3002";
-        } else if (meta && meta.segmentInfo) {
+        if (meta && meta.segmentInfo) {
           const info = meta.segmentInfo;
-          const missingText = info.missing.length ? info.missing.join(",") : "\u65e0";
-          displayText = `\u89e3\u7801\u6210\u529f${info.currentSegment}\uff0c\u7f3a\u5c11${missingText}`;
+          if (canDownload) {
+            displayText = `\u89e3\u7801\u6210\u529f (${info.totalSegments}/${info.totalSegments})`;
+          } else {
+            const missingText = info.missing && info.missing.length ? info.missing.join(", ") : "\u65e0";
+            displayText = `\u89e3\u7801\u6210\u529f (${info.currentSegment}/${info.totalSegments})\uff0c\u7f3a\u5c11\uff1a${missingText}`;
+          }
+        } else if (canDownload) {
+          displayText = "\u89e3\u7801\u6210\u529f\uff0c\u70b9\u51fb\u201c\u89e3\u7801\u7ed3\u679c\u201d\u67e5\u770b\u3002";
         } else if (!text && Array.isArray(state.segmentsData)) {
           displayText = "\u89e3\u7801\u8fdb\u884c\u4e2d";
         }
@@ -954,11 +1009,340 @@
         return `${size.toFixed(idx === 0 ? 0 : 2)} ${units[idx]}`;
       }
 
+      function bytesToBase64Url(bytes) {
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+      }
+
+      function base64UrlToBytes(base64url) {
+        const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+        const pad = "=".repeat((4 - (base64.length % 4)) % 4);
+        const binary = atob(base64 + pad);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+      }
+
+      function parseMetaBase64Url(metaText) {
+        const bytes = base64UrlToBytes(metaText);
+        return JSON.parse(new TextDecoder().decode(bytes));
+      }
+
+      function concatUint8Arrays(parts) {
+        const total = parts.reduce((sum, part) => sum + part.length, 0);
+        const out = new Uint8Array(total);
+        let offset = 0;
+        for (const part of parts) {
+          out.set(part, offset);
+          offset += part.length;
+        }
+        return out;
+      }
+
+      function rebuildPayloadBytes(metaObj, payloadBytes) {
+        if (metaObj.multipart && Array.isArray(metaObj.volumes) && metaObj.volumes.length) {
+          const restoredParts = [];
+          let offset = 0;
+          for (const volume of metaObj.volumes) {
+            const size = Number(volume.processedSize) || 0;
+            if (size <= 0 || offset + size > payloadBytes.length) {
+              throw new Error("分卷数据损坏或不完整");
+            }
+            const segment = payloadBytes.slice(offset, offset + size);
+            offset += size;
+            restoredParts.push(volume.compression === "deflate" ? pako.inflate(segment) : segment);
+          }
+          return concatUint8Arrays(restoredParts);
+        }
+        return metaObj.compression === "deflate" ? pako.inflate(payloadBytes) : payloadBytes;
+      }
+
+      function isAlreadyCompressedFile(meta) {
+        if (!meta) return false;
+        const name = String(meta.name || "").toLowerCase();
+        const mime = String(meta.type || "").toLowerCase();
+        const compressedExt =
+          /\.(jpg|jpeg|png|gif|webp|avif|heic|mp4|mp3|zip|rar|7z|gz|pdf|docx|xlsx|pptx)$/i;
+        const compressedMime =
+          /^(image\/(jpeg|png|gif|webp|avif|heic)|video\/|audio\/|application\/(zip|pdf|gzip))/;
+        return compressedExt.test(name) || compressedMime.test(mime);
+      }
+
+      function shouldCompressFile(meta, bytes) {
+        const mime = (meta.type || "").toLowerCase();
+        const name = (meta.name || "").toLowerCase();
+        const textType = mime.startsWith("text/") || /application\/(json|xml|javascript)/.test(mime);
+        const textExt = /\.(txt|json|csv|xml|md|html|css|js|ts)$/i.test(name);
+        if (isAlreadyCompressedFile(meta)) return false;
+        if (textType || textExt) return true;
+        return bytes.length > 512 * 1024;
+      }
+
+      function updateCompressionChips() {
+        const autoBtn = document.getElementById("compressAutoBtn");
+        const forceBtn = document.getElementById("compressForceBtn");
+        if (!autoBtn || !forceBtn) return;
+
+        autoBtn.textContent = "自动判断";
+        forceBtn.disabled = false;
+        autoBtn.classList.toggle("active", !state.forceCompress);
+        forceBtn.classList.toggle("active", state.forceCompress);
+      }
+
+      function setCompressionMode(mode) {
+        state.forceCompress = mode === "force";
+        updateCompressionChips();
+        estimateCurrentPayloadStats();
+      }
+
+      function syncCompressionControls() {
+        updateCompressionChips();
+      }
+
+      function getChunkSizeByEcc(errorLevel) {
+        const map = {
+          // Byte-mode practical payload per frame (leave header margin).
+          L: 2800,
+          M: 2200,
+          Q: 1550,
+          H: 1150,
+        };
+        return map[errorLevel] || 1550;
+      }
+
+      function buildTransmissionPayload(inputMode, payload) {
+        let sourceBytes;
+        let meta;
+        const forceCompress = Boolean(state.forceCompress);
+        let alreadyCompressed = false;
+        let strategyTag = "none";
+
+        if (inputMode === "file") {
+          const fileBytes = payload;
+          const fileMeta = state.fileMeta || {
+            name: "file.bin",
+            type: "application/octet-stream",
+            size: fileBytes.length,
+          };
+          alreadyCompressed = isAlreadyCompressedFile(fileMeta);
+          const shouldCompress = shouldCompressFile(fileMeta, fileBytes);
+          const enableMultipart = fileBytes.length > MAX_FILE_SIZE_BYTES;
+
+          if (enableMultipart) {
+            const volumeParts = [];
+            const volumeMeta = [];
+            let offset = 0;
+            let hasCompressedVolume = false;
+
+            for (let start = 0; start < fileBytes.length; start += FILE_VOLUME_BYTES) {
+              const end = Math.min(start + FILE_VOLUME_BYTES, fileBytes.length);
+              const rawPart = fileBytes.slice(start, end);
+              const deflated = pako.deflate(rawPart, { level: 9 });
+              const useCompressed = forceCompress || deflated.length + 16 < rawPart.length;
+              const partBytes = useCompressed ? deflated : rawPart;
+              const partCompression = useCompressed ? "deflate" : "none";
+              hasCompressedVolume = hasCompressedVolume || useCompressed;
+              volumeParts.push(partBytes);
+              volumeMeta.push({
+                index: volumeMeta.length + 1,
+                originalSize: rawPart.length,
+                processedSize: partBytes.length,
+                compression: partCompression,
+                offset,
+              });
+              offset += partBytes.length;
+            }
+
+            sourceBytes = concatUint8Arrays(volumeParts);
+            meta = {
+              kind: "file",
+              name: fileMeta.name || "file.bin",
+              type: fileMeta.type || "application/octet-stream",
+              size: Number.isFinite(fileMeta.size) ? fileMeta.size : fileBytes.length,
+              compression: hasCompressedVolume ? "deflate" : "none",
+              forceCompress,
+              alreadyCompressed,
+              originalSize: fileBytes.length,
+              multipart: true,
+              volumeSize: FILE_VOLUME_BYTES,
+              volumeCount: volumeMeta.length,
+              volumes: volumeMeta,
+            };
+            strategyTag = forceCompress ? "force" : hasCompressedVolume ? "auto" : "none";
+          } else {
+            let finalBytes = fileBytes;
+            let compression = "none";
+            if (forceCompress || shouldCompress) {
+              const deflated = pako.deflate(fileBytes, { level: 9 });
+              if (forceCompress) {
+                finalBytes = deflated;
+                compression = "deflate";
+              } else if (deflated.length + 16 < fileBytes.length) {
+                finalBytes = deflated;
+                compression = "deflate";
+              }
+            }
+            sourceBytes = finalBytes;
+            meta = {
+              kind: "file",
+              name: fileMeta.name || "file.bin",
+              type: fileMeta.type || "application/octet-stream",
+              size: Number.isFinite(fileMeta.size) ? fileMeta.size : fileBytes.length,
+              compression,
+              forceCompress,
+              alreadyCompressed,
+              originalSize: fileBytes.length,
+              multipart: false,
+            };
+            strategyTag = forceCompress ? "force" : compression === "deflate" ? "auto" : "none";
+          }
+        } else {
+          const text = payload;
+          const textBytes = new TextEncoder().encode(text);
+          let finalBytes = textBytes;
+          let compression = "none";
+          if (forceCompress || textBytes.length > 256) {
+            const deflated = pako.deflate(textBytes, { level: 9 });
+            if (forceCompress) {
+              finalBytes = deflated;
+              compression = "deflate";
+            } else if (deflated.length + 8 < textBytes.length) {
+              finalBytes = deflated;
+              compression = "deflate";
+            }
+          }
+          sourceBytes = finalBytes;
+          meta = {
+            kind: "text",
+            compression,
+            forceCompress,
+            alreadyCompressed: false,
+            originalSize: textBytes.length,
+            charset: "utf-8",
+            multipart: false,
+          };
+          strategyTag = forceCompress ? "force" : compression === "deflate" ? "auto" : "none";
+        }
+
+        const metaBytes = new TextEncoder().encode(JSON.stringify(meta));
+        let combinedSummary = "";
+        if (sourceBytes.length <= MAX_COMPRESSED_PREVIEW_BYTES) {
+          const metaBase64Url = bytesToBase64Url(metaBytes);
+          const payloadBase64Url = bytesToBase64Url(sourceBytes);
+          combinedSummary = `v5t|${metaBase64Url}|${payloadBase64Url}`;
+        }
+        return {
+          meta,
+          metaBytes,
+          payloadBytes: sourceBytes,
+          combined: combinedSummary,
+          rawLength: inputMode === "file" ? payload.length : new TextEncoder().encode(payload).length,
+          processedLength: sourceBytes.length,
+          encodedLength: sourceBytes.length,
+          strategy: strategyTag,
+          forceCompress: meta.forceCompress,
+          alreadyCompressed: meta.alreadyCompressed,
+        };
+      }
+
+      function bytesToBinaryString(bytes) {
+        let out = "";
+        const step = 0x8000;
+        for (let i = 0; i < bytes.length; i += step) {
+          const chunk = bytes.subarray(i, Math.min(i + step, bytes.length));
+          out += String.fromCharCode.apply(null, Array.from(chunk));
+        }
+        return out;
+      }
+
+      function binaryStringToBytes(text) {
+        const bytes = new Uint8Array(text.length);
+        for (let i = 0; i < text.length; i++) {
+          bytes[i] = text.charCodeAt(i) & 0xff;
+        }
+        return bytes;
+      }
+
+      function encodeVarInt(value) {
+        const bytes = [];
+        let v = value >>> 0;
+        while (v >= 0x80) {
+          bytes.push((v & 0x7f) | 0x80);
+          v >>>= 7;
+        }
+        bytes.push(v & 0x7f);
+        return bytes;
+      }
+
+      function decodeVarInt(bytes, startOffset) {
+        let value = 0;
+        let shift = 0;
+        let offset = startOffset;
+        while (offset < bytes.length) {
+          const b = bytes[offset++];
+          value |= (b & 0x7f) << shift;
+          if ((b & 0x80) === 0) {
+            return { value, offset };
+          }
+          shift += 7;
+          if (shift > 28) break;
+        }
+        throw new Error("\u5206\u7247\u5934 varint \u65e0\u6548");
+      }
+
+      function createV5Frame(current, total, flags, payloadBytes) {
+        const header = [0x46, 0x54, 0x05, flags, ...encodeVarInt(current), ...encodeVarInt(total)];
+        const out = new Uint8Array(header.length + payloadBytes.length);
+        out.set(header, 0);
+        out.set(payloadBytes, header.length);
+        return out;
+      }
+
+      function parseV5Frame(frameBytes) {
+        if (frameBytes.length < 6 || frameBytes[0] !== 0x46 || frameBytes[1] !== 0x54 || frameBytes[2] !== 0x05) {
+          return null;
+        }
+        let offset = 3;
+        const flags = frameBytes[offset++];
+        const currentInfo = decodeVarInt(frameBytes, offset);
+        const totalInfo = decodeVarInt(frameBytes, currentInfo.offset);
+        const current = currentInfo.value;
+        const total = totalInfo.value;
+        if (current < 1 || total < 1 || current > total) {
+          throw new Error("分片序号无效");
+        }
+        return {
+          flags,
+          current,
+          total,
+          payload: frameBytes.slice(totalInfo.offset),
+        };
+      }
+
+      function splitV5BinarySegments(metaBytes, payloadBytes, chunkSize) {
+        const dataCount = Math.max(1, Math.ceil(payloadBytes.length / chunkSize));
+        const total = dataCount + 1;
+        const frames = [];
+        frames.push(createV5Frame(1, total, 1, metaBytes));
+        for (let i = 0; i < dataCount; i++) {
+          const start = i * chunkSize;
+          const end = Math.min(start + chunkSize, payloadBytes.length);
+          const chunk = payloadBytes.slice(start, end);
+          frames.push(createV5Frame(i + 2, total, 2, chunk));
+        }
+        return frames;
+      }
+
       function cancelQRGeneration(silent = false) {
         state.generationToken += 1;
         state.isGenerating = false;
         if (!silent) {
-          setQRStatus("已取消二维码生成。");
+          setQRStatus("\u5df2\u53d6\u6d88\u4e8c\u7ef4\u7801\u751f\u6210\u3002");
         }
       }
 
@@ -988,13 +1372,15 @@
         document.getElementById("qrFileMode").classList.toggle("hidden", mode !== "file");
         document.getElementById("qrTextMode").classList.toggle("hidden", mode !== "text");
         document.getElementById("qrModeHint").textContent =
-          mode === "file" ? "当前模式：文件输入" : "当前模式：文本输入";
+          mode === "file" ? "\u5f53\u524d\u6a21\u5f0f\uff1a\u6587\u4ef6\u8f93\u5165" : "\u5f53\u524d\u6a21\u5f0f\uff1a\u6587\u672c\u8f93\u5165";
 
         if (mode === "text") {
           const textarea = document.getElementById("qrTextInput");
           textarea.value = state.textDraft || "";
           textarea.focus();
         }
+        syncCompressionControls();
+        estimateCurrentPayloadStats();
       }
 
       function setOptionChip(group, value) {
@@ -1007,10 +1393,11 @@
         document.querySelectorAll(`.option-chips[data-group="${group}"] .option-chip`).forEach((button) => {
           button.classList.toggle("active", button.dataset.value === value);
         });
+        estimateCurrentPayloadStats();
       }
 
       function copyText(text) {
-        if (!text) return Promise.reject(new Error("空内容"));
+        if (!text) return Promise.reject(new Error("\u7a7a\u5185\u5bb9"));
         if (navigator.clipboard && window.isSecureContext) {
           return navigator.clipboard.writeText(text);
         }
@@ -1028,33 +1415,34 @@
 
       function clearQRGenerator() {
         cancelQRGeneration(true);
-        state.filePayload = "";
-        state.fileName = "";
+        state.fileBytes = null;
+        state.fileMeta = null;
         state.textDraft = "";
         state.compressed = "";
         state.qrImages = [];
         document.getElementById("qrFileInput").value = "";
         document.getElementById("qrTextInput").value = "";
-        document.getElementById("qrFilePreview").textContent = "未选择文件。";
-        setQRStatus("等待生成二维码。");
-        document.getElementById("qrFilePreview").textContent = "\u672a\u9009\u62e9\u6587\u4ef6\u3002";
+        const preview = document.getElementById("qrFilePreview");
+        preview.textContent = "";
+        preview.classList.add("hidden");
         setQRStatus("\u7b49\u5f85\u751f\u6210\u4e8c\u7ef4\u7801\u3002");
-        document.getElementById("rawLength").textContent = "0";
-        document.getElementById("compressedLength").textContent = "0";
-        document.getElementById("segmentCount").textContent = "0";
+        updateQRStats(0, 0, 0);
         setBatchDownloadEnabled(false);
         setShowQrEnabled(false);
         setShowCompressedEnabled(false);
         switchQRInputMode("file");
+        syncCompressionControls();
       }
 
       function resetDecodeState() {
         state.segmentsData = null;
         state.expectedTotal = 0;
+        state.segmentMeta = null;
         state.decodedPayload = "";
         state.decodedCanDownload = false;
+        state.decodedFile = null;
         document.getElementById("decodeText").value = "";
-        document.getElementById("decodeResult").textContent = "等待输入。";
+        document.getElementById("decodeResult").textContent = "\u7b49\u5f85\u8f93\u5165\u3002";
         clearDecodeDropList();
         setDecodedDownloadEnabled(false);
         clearDecodeError();
@@ -1079,34 +1467,37 @@
 
       function handleQRFile(file) {
         if (!file) return;
+        const preview = document.getElementById("qrFilePreview");
         if (state.isGenerating) {
           setQRStatus("\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801\uff0c\u8bf7\u5148\u6e05\u7a7a\u6216\u7b49\u5f85\u5b8c\u6210\u3002");
           return;
         }
         if (file.size > MAX_FILE_SIZE_BYTES) {
-          state.filePayload = "";
-          state.fileName = "";
-          document.getElementById("qrFilePreview").textContent =
-            `\u6587\u4ef6\u8fc7\u5927\uff08${formatFileSize(file.size)}\uff09\uff0c\u4e0a\u9650 ${MAX_FILE_SIZE_MB} MB\u3002`;
-          setQRStatus("\u6587\u4ef6\u8fc7\u5927\uff0c\u5df2\u963b\u6b62\u751f\u6210\u4ee5\u907f\u514d\u9875\u9762\u5d29\u6e83\u3002");
+          state.fileBytes = null;
+          state.fileMeta = null;
+          preview.textContent = `\u6587\u4ef6\u8fc7\u5927\uff08${formatFileSize(file.size)}\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB\u3002`;
+          preview.classList.remove("hidden");
+          setQRStatus(`\u6587\u4ef6\u8d85\u8fc7 ${MAX_FILE_SIZE_MB}MB\uff0c\u5df2\u963b\u6b62\u751f\u6210\u3002`);
           updateQRStats(0, 0, 0);
-          state.isGenerating = false;
           return;
         }
-
         const reader = new FileReader();
         reader.onload = function () {
-          state.fileName = file.name;
-          state.filePayload = JSON.stringify({
-            dataurl: reader.result,
-            filename: file.name,
-          });
-          const payloadLength = state.filePayload.length;
-          document.getElementById("qrFilePreview").textContent =
-            `\u6587\u4ef6\uff1a${file.name}\n\u5927\u5c0f\uff1a${formatFileSize(file.size)}\n\u5b57\u7b26\u957f\u5ea6\uff1a${payloadLength}`;
+          const bytes = new Uint8Array(reader.result);
+          state.fileBytes = bytes;
+          state.fileMeta = {
+            name: file.name,
+            type: file.type || "application/octet-stream",
+            size: file.size,
+          };
+          preview.textContent =
+            `\u6587\u4ef6\uff1a${file.name}\n\u5927\u5c0f\uff1a${formatFileSize(file.size)}\n\u5b57\u8282\u957f\u5ea6\uff1a${bytes.length}`;
+          preview.classList.remove("hidden");
           setQRStatus("\u6587\u4ef6\u5df2\u8f7d\u5165\uff0c\u53ef\u751f\u6210\u4e8c\u7ef4\u7801\u3002");
+          syncCompressionControls();
+          estimateCurrentPayloadStats();
         };
-        reader.readAsDataURL(file);
+        reader.readAsArrayBuffer(file);
       }
 
       document.getElementById("qrFileInput").addEventListener("change", (event) => {
@@ -1117,6 +1508,9 @@
 
       document.getElementById("qrTextInput").addEventListener("input", (event) => {
         state.textDraft = event.target.value;
+        if (state.inputMode === "text") {
+          estimateCurrentPayloadStats();
+        }
       });
 
       const qrFileDropZone = document.getElementById("qrFileDropZone");
@@ -1170,179 +1564,48 @@
         document.getElementById("segmentCount").textContent = String(segmentsLength);
       }
 
-      async function createQRCodeDataUrl(text, finalSize, errorLevel) {
-        return new Promise((resolve, reject) => {
-          const host = document.createElement("div");
-          host.style.position = "fixed";
-          host.style.left = "-99999px";
-          host.style.top = "0";
-          document.body.appendChild(host);
-
-          const padding = Math.max(48, Math.round(finalSize * 0.09765625));
-          const qrSize = Math.max(128, finalSize - padding * 2);
-
-          new QRCode(host, {
-            text,
-            width: qrSize,
-            height: qrSize,
-            typeNumber: 40,
-            correctLevel: QRCode.CorrectLevel[errorLevel],
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-          });
-
-          setTimeout(() => {
-            const canvas = host.querySelector("canvas");
-            const img = host.querySelector("img");
-            const source = canvas || img;
-
-            if (!source) {
-              document.body.removeChild(host);
-              reject(new Error("二维码生成失败"));
-              return;
-            }
-
-            const finalCanvas = document.createElement("canvas");
-            finalCanvas.width = finalSize;
-            finalCanvas.height = finalSize;
-            const ctx = finalCanvas.getContext("2d");
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, finalSize, finalSize);
-
-            const draw = () => {
-              ctx.drawImage(source, padding, padding, qrSize, qrSize);
-              resolve(finalCanvas.toDataURL("image/png"));
-              document.body.removeChild(host);
-            };
-
-            if (canvas) {
-              draw();
-              return;
-            }
-
-            const image = new Image();
-            image.onload = function () {
-              ctx.drawImage(image, padding, padding, qrSize, qrSize);
-              resolve(finalCanvas.toDataURL("image/png"));
-              document.body.removeChild(host);
-            };
-            image.onerror = () => {
-              document.body.removeChild(host);
-              reject(new Error("二维码生成失败"));
-            };
-            image.src = img.src;
-          }, 80);
-        });
-      }
-
       function getCurrentQRInputValue() {
         if (state.inputMode === "file") {
-          return state.filePayload;
+          return state.fileBytes;
         }
         return document.getElementById("qrTextInput").value;
       }
 
-      async function generateQR() {
-        if (state.isGenerating) {
-          setQRStatus("\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801\uff0c\u8bf7\u7a0d\u5019\u3002");
-          return;
-        }
+      function estimateCurrentPayloadStats() {
         const payload = getCurrentQRInputValue();
-        const qrSize = parseInt(state.qrSize, 10);
-        const errorLevel = state.qrEcc;
-        const token = ++state.generationToken;
-        state.isGenerating = true;
+        const isFileMode = state.inputMode === "file";
 
-        state.qrImages = [];
-        setBatchDownloadEnabled(false);
-        setShowQrEnabled(false);
-        setShowCompressedEnabled(false);
+        if (isFileMode) {
+          if (!(payload instanceof Uint8Array) || payload.length === 0) {
+            updateQRStats(0, 0, 0);
+            return null;
+          }
+        } else {
+          if (typeof payload !== "string" || !payload.trim()) {
+            updateQRStats(0, 0, 0);
+            return null;
+          }
+          const textBytes = new TextEncoder().encode(payload);
+          if (textBytes.length > MAX_TEXT_SIZE_BYTES) {
+            updateQRStats(textBytes.length, 0, 0);
+            return null;
+          }
+        }
 
-        if (!payload.trim()) {
-          setQRStatus("请先选择文件或输入文本。");
+        try {
+          const transmission = buildTransmissionPayload(state.inputMode, payload);
+          const chunkSize = getChunkSizeByEcc(state.qrEcc);
+          const segments = splitV5BinarySegments(
+            transmission.metaBytes,
+            transmission.payloadBytes,
+            chunkSize
+          );
+          updateQRStats(transmission.rawLength, transmission.processedLength, segments.length);
+          return { transmission, segments };
+        } catch (error) {
           updateQRStats(0, 0, 0);
-          state.isGenerating = false;
-          return;
+          return null;
         }
-
-        if (payload.length > MAX_PAYLOAD_CHARS) {
-          updateQRStats(payload.length, 0, 0);
-          setQRStatus(
-            `\u8f93\u5165\u5185\u5bb9\u8fc7\u5927\uff08${payload.length}\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB \u751f\u6210\u3002`
-          );
-          state.isGenerating = false;
-          return;
-        }
-
-        const compressed = LZString.compressToEncodedURIComponent(payload);
-        const maxLengthByLevel = {
-          L: 2000,
-          M: 1600,
-          Q: 1200,
-          H: 900,
-        };
-        const maxLength = maxLengthByLevel[errorLevel] || 1200;
-        const segments = [];
-        for (let i = 0; i < compressed.length; i += maxLength) {
-          segments.push(compressed.slice(i, i + maxLength));
-        }
-        if (segments.length > MAX_SEGMENT_COUNT) {
-          setQRStatus(
-            `\u9884\u8ba1\u4e8c\u7ef4\u7801 ${segments.length} \u5f20\uff0c\u8d85\u8fc7\u4e0a\u9650 ${MAX_SEGMENT_COUNT} \u5f20\uff0c\u5df2\u4e2d\u6b62\u751f\u6210\u3002`
-          );
-          updateQRStats(payload.length, compressed.length, segments.length);
-          state.isGenerating = false;
-          return;
-        }
-
-        state.compressed = "v2" + compressed;
-        updateQRStats(payload.length, compressed.length, segments.length);
-        setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 0 / ${segments.length}`);
-        setQRStatus(`正在生成二维码 0 / ${segments.length}`);
-        setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 0 / ${segments.length}`);
-        await new Promise((resolve) => requestAnimationFrame(resolve));
-
-        for (let index = 0; index < segments.length; index++) {
-          if (token !== state.generationToken) {
-            state.isGenerating = false;
-            return;
-          }
-          const segmentText = `v3${index + 1}/${segments.length}|${segments[index]}`;
-          setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 ${index + 1} / ${segments.length}`);
-          setQRStatus(`正在生成二维码 ${index + 1} / ${segments.length}`);
-          setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 ${index + 1} / ${segments.length}`);
-          await new Promise((resolve) => setTimeout(resolve, 0));
-          let dataUrl;
-          try {
-            dataUrl = await createQRCodeDataUrl(segmentText, qrSize, errorLevel);
-          } catch (error) {
-            state.isGenerating = false;
-            setQRStatus(`\u7b2c ${index + 1} \u5f20\u751f\u6210\u5931\u8d25\uff1a${error.message}`);
-            setQRStatus(`第 ${index + 1} 张生成失败：${error.message}`);
-            return;
-          }
-          if (token !== state.generationToken) {
-            state.isGenerating = false;
-            return;
-          }
-          state.qrImages.push({
-            name: `qrcode-${index + 1}-of-${segments.length}.png`,
-            dataUrl,
-          });
-          if ((index + 1) % 10 === 0 || index === segments.length - 1) {
-            await new Promise((resolve) => requestAnimationFrame(resolve));
-          }
-        }
-        setQRStatus(`生成成功，共 ${segments.length} 张二维码，点击“显示二维码”查看。`);
-        if (token !== state.generationToken) {
-          state.isGenerating = false;
-          return;
-        }
-        state.isGenerating = false;
-        setQRStatus(`\u751f\u6210\u6210\u529f\uff0c\u5171 ${segments.length} \u5f20\u4e8c\u7ef4\u7801\uff0c\u70b9\u51fb\u201c\u663e\u793a\u4e8c\u7ef4\u7801\u201d\u67e5\u770b\u3002`);
-        setBatchDownloadEnabled(state.qrImages.length > 0);
-        setShowQrEnabled(state.qrImages.length > 0);
-        setShowCompressedEnabled(Boolean(state.compressed));
       }
 
       async function downloadAllQRZip() {
@@ -1380,9 +1643,8 @@
 
           const caption = document.createElement("div");
           caption.className = "caption";
-          caption.textContent = `第 ${index + 1} 张`;
-          tile.appendChild(caption);
           caption.textContent = `\u7b2c ${index + 1} \u5f20`;
+          tile.appendChild(caption);
 
           const singleDownload = document.createElement("button");
           singleDownload.type = "button";
@@ -1398,7 +1660,7 @@
           gallery.appendChild(tile);
         });
 
-        openModal("二维码列表", gallery);
+        openModal("\u4e8c\u7ef4\u7801\u5217\u8868", gallery);
       }
 
       function previewCompressedResult() {
@@ -1431,115 +1693,6 @@
         openModal("压缩结果", wrap);
       }
 
-      function decodePayload(input) {
-        const value = input.trim();
-        if (!value) {
-          throw new Error("请输入二维码内容");
-        }
-
-        if (!value.startsWith("v1") && !value.startsWith("v2") && !value.startsWith("v3")) {
-          try {
-            const decompressed = LZString.decompressFromEncodedURIComponent(value);
-            return { text: decompressed || value, canDownload: true };
-          } catch (error) {
-            return { text: value, canDownload: true };
-          }
-        }
-
-        const version = value.substring(0, 2);
-        const content = value.substring(2);
-
-        if (version === "v1") {
-          const base64 = content.replace(/-/g, "+").replace(/_/g, "/");
-          const binaryString = atob(base64);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          const inflated = pako.inflate(bytes);
-          return { text: new TextDecoder().decode(inflated), canDownload: true };
-        }
-
-        if (version === "v2") {
-          return {
-            text: LZString.decompressFromEncodedURIComponent(content) || value,
-            canDownload: true,
-          };
-        }
-
-        if (version === "v3") {
-          let currentSegment;
-          let totalSegments;
-          let segmentData;
-
-          const sepIndex = content.indexOf("|");
-          if (sepIndex >= 0) {
-            const header = content.slice(0, sepIndex);
-            const parts = header.split("/");
-            if (parts.length !== 2) {
-              throw new Error("\u5206\u6bb5\u5934\u683c\u5f0f\u65e0\u6548");
-            }
-            currentSegment = parseInt(parts[0], 10);
-            totalSegments = parseInt(parts[1], 10);
-            segmentData = content.slice(sepIndex + 1);
-          } else {
-            // Legacy fixed-width v3 header: 2 digits current + 2 digits total.
-            currentSegment = parseInt(content.substring(0, 2), 10);
-            totalSegments = parseInt(content.substring(2, 4), 10);
-            segmentData = content.substring(4);
-          }
-
-          if (
-            !Number.isInteger(currentSegment) ||
-            !Number.isInteger(totalSegments) ||
-            currentSegment < 1 ||
-            totalSegments < 1 ||
-            currentSegment > totalSegments
-          ) {
-            throw new Error("\u5206\u6bb5\u4fe1\u606f\u65e0\u6548");
-          }
-
-          if (!state.segmentsData || state.expectedTotal !== totalSegments) {
-            state.segmentsData = new Array(totalSegments).fill(null);
-            state.expectedTotal = totalSegments;
-          }
-
-          state.segmentsData[currentSegment - 1] = segmentData;
-
-          const missing = state.segmentsData
-            .map((segment, index) => (segment === null ? index + 1 : null))
-            .filter((item) => item !== null);
-
-          if (missing.length > 0) {
-            return {
-              text: `已收到 ${totalSegments - missing.length} / ${totalSegments} 段，缺少：${missing.join(", ")}`,
-              canDownload: false,
-              segmentInfo: {
-                currentSegment,
-                totalSegments,
-                missing,
-              },
-            };
-          }
-
-          const fullData = state.segmentsData.join("");
-          const decoded = LZString.decompressFromEncodedURIComponent(fullData);
-          state.segmentsData = null;
-          state.expectedTotal = 0;
-          return {
-            text: decoded || fullData,
-            canDownload: true,
-            segmentInfo: {
-              currentSegment,
-              totalSegments,
-              missing: [],
-            },
-          };
-        }
-
-        return { text: value, canDownload: true };
-      }
-
       function decodeTextInput() {
         const input = document.getElementById("decodeText").value;
         clearDecodeError();
@@ -1554,105 +1707,28 @@
         }
       }
 
-      function decodeImage(dataUrl) {
-        return new Promise((resolve, reject) => {
-          const image = new Image();
-          image.onload = function () {
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d");
-            canvas.width = image.width;
-            canvas.height = image.height;
-            context.drawImage(image, 0, 0);
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-            if (code) {
-              resolve(code.data);
-            } else {
-              reject(new Error("未识别到二维码"));
-            }
-          };
-          image.onerror = () => reject(new Error("图片加载失败"));
-          image.src = dataUrl;
-        });
-      }
-
-      async function handleDecodeFiles(files) {
-        if (!files || !files.length) return;
-        clearDecodeError();
-        state.segmentsData = null;
-        state.expectedTotal = 0;
-
-        const dropZoneEl = document.getElementById("dropZone");
-        const list = document.getElementById("decodeDropList");
-        const fileList = Array.from(files);
-        list.innerHTML = "";
-        list.classList.remove("hidden");
-        dropZoneEl.classList.add("has-items");
-
-        for (let index = 0; index < fileList.length; index++) {
-          const file = fileList[index];
-          const item = document.createElement("div");
-          item.className = "dropzone-item";
-
-          const status = document.createElement("div");
-          status.className = "decode-item-status";
-          status.textContent = `正在解码 (${index + 1}/${fileList.length})`;
-          item.appendChild(status);
-          status.classList.add("decode-item-bar");
-          status.textContent = `\u6b63\u5728\u89e3\u7801 (${index + 1}/${fileList.length})`;
-
-          const removeBtn = document.createElement("button");
-          removeBtn.type = "button";
-          removeBtn.className = "decode-item-remove";
-          removeBtn.textContent = "\u00d7";
-          removeBtn.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            item.remove();
-            if (!list.children.length) {
-              clearDecodeDropList();
-            }
-          });
-          item.appendChild(removeBtn);
-
-          list.appendChild(item);
-
-          try {
-            const dataUrl = await readFileAsDataURL(file);
-            const decoded = await decodeImage(dataUrl);
-            const text = decodePayload(decoded);
-            document.getElementById("decodeText").value = decoded;
-            setDecodeResult(text.text, text.canDownload, text);
-            status.textContent = text.canDownload
-              ? `解码成功 (${index + 1}/${fileList.length})`
-              : `解码进行中 (${index + 1}/${fileList.length})`;
-            status.classList.toggle("success", text.canDownload);
-            if (text.canDownload) {
-              status.textContent = `\u89e3\u7801\u6210\u529f (${index + 1}/${fileList.length})`;
-            } else {
-              status.textContent = `\u89e3\u7801\u8fdb\u884c\u4e2d (${index + 1}/${fileList.length})`;
-            }
-            if (text.segmentInfo) {
-              status.textContent = `\u89e3\u7801\u6210\u529f (${text.segmentInfo.currentSegment}/${text.segmentInfo.totalSegments})`;
-              status.classList.add("success");
-            }
-            status.classList.remove("error");
-            clearDecodeError();
-          } catch (error) {
-            setDecodeResult("解码失败", false);
-            setDecodeError(error.message);
-            setDecodeResult("\u89e3\u7801\u5931\u8d25", false);
-            status.textContent = `解码失败 (${index + 1}/${fileList.length})`;
-            status.classList.add("error");
-            status.textContent = `\u89e3\u7801\u5931\u8d25 (${index + 1}/${fileList.length})`;
-          }
-        }
+      function previewDecodedResult() {
+        if (!state.decodedPayload) return;
+        const wrap = document.createElement("div");
+        const pre = document.createElement("pre");
+        pre.className = "modal-pre";
+        pre.textContent = state.decodedPayload;
+        wrap.appendChild(pre);
+        openModal("解码结果预览", wrap);
       }
 
       function downloadDecodedFile() {
-        if (!state.decodedCanDownload || !state.decodedPayload) return;
+        if (!state.decodedCanDownload) return;
 
+        if (state.decodedFile && state.decodedFile.bytes) {
+          const blob = new Blob([state.decodedFile.bytes], {
+            type: state.decodedFile.type || "application/octet-stream",
+          });
+          downloadBlob(blob, state.decodedFile.name || "decoded.bin");
+          return;
+        }
+
+        if (!state.decodedPayload) return;
         try {
           const parsed = JSON.parse(state.decodedPayload);
           if (parsed && parsed.dataurl && parsed.filename) {
@@ -1669,14 +1745,403 @@
         );
       }
 
-      function previewDecodedResult() {
-        if (!state.decodedPayload) return;
-        const wrap = document.createElement("div");
-        const pre = document.createElement("pre");
-        pre.className = "modal-pre";
-        pre.textContent = state.decodedPayload;
-        wrap.appendChild(pre);
-        openModal("解码结果预览", wrap);
+      async function createQRCodeDataUrl(payload, finalSize, errorLevel) {
+        return new Promise((resolve, reject) => {
+          try {
+            const payloadBytes =
+              payload instanceof Uint8Array ? payload : new TextEncoder().encode(String(payload || ""));
+            const qr = qrcode(0, errorLevel);
+            qr.addData(bytesToBinaryString(payloadBytes), "Byte");
+            qr.make();
+
+            const moduleCount = qr.getModuleCount();
+            const padding = Math.max(48, Math.round(finalSize * 0.09765625));
+            const qrArea = Math.max(128, finalSize - padding * 2);
+            const cell = Math.max(1, Math.floor(qrArea / moduleCount));
+            const drawSize = cell * moduleCount;
+            const offsetX = Math.floor((finalSize - drawSize) / 2);
+            const offsetY = Math.floor((finalSize - drawSize) / 2);
+
+            const canvas = document.createElement("canvas");
+            canvas.width = finalSize;
+            canvas.height = finalSize;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, finalSize, finalSize);
+            ctx.fillStyle = "#000000";
+
+            for (let r = 0; r < moduleCount; r++) {
+              for (let c = 0; c < moduleCount; c++) {
+                if (qr.isDark(r, c)) {
+                  ctx.fillRect(offsetX + c * cell, offsetY + r * cell, cell, cell);
+                }
+              }
+            }
+
+            resolve(canvas.toDataURL("image/png"));
+          } catch (error) {
+            reject(error instanceof Error ? error : new Error("\u4e8c\u7ef4\u7801\u751f\u6210\u5931\u8d25"));
+          }
+        });
+      }
+
+      async function generateQR() {
+        if (state.isGenerating) {
+          setQRStatus("\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801\uff0c\u8bf7\u7a0d\u5019\u3002");
+          return;
+        }
+
+        const payload = getCurrentQRInputValue();
+        const isFileMode = state.inputMode === "file";
+        const qrSize = parseInt(state.qrSize, 10);
+        const errorLevel = state.qrEcc;
+        const token = ++state.generationToken;
+        state.isGenerating = true;
+
+        state.qrImages = [];
+        setBatchDownloadEnabled(false);
+        setShowQrEnabled(false);
+        setShowCompressedEnabled(false);
+
+        if (isFileMode) {
+          if (!(payload instanceof Uint8Array) || payload.length === 0) {
+            setQRStatus("\u8bf7\u5148\u9009\u62e9\u6587\u4ef6\u3002");
+            updateQRStats(0, 0, 0);
+            state.isGenerating = false;
+            return;
+          }
+          if (payload.length > MAX_FILE_SIZE_BYTES) {
+            setQRStatus(`\u6587\u4ef6\u8fc7\u5927\uff08${payload.length} \u5b57\u8282\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB\u3002`);
+            updateQRStats(payload.length, 0, 0);
+            state.isGenerating = false;
+            return;
+          }
+        } else {
+          if (typeof payload !== "string" || !payload.trim()) {
+            setQRStatus("\u8bf7\u8f93\u5165\u6587\u672c\u3002");
+            updateQRStats(0, 0, 0);
+            state.isGenerating = false;
+            return;
+          }
+          const textBytes = new TextEncoder().encode(payload);
+          if (textBytes.length > MAX_TEXT_SIZE_BYTES) {
+            setQRStatus(`\u8f93\u5165\u6587\u672c\u8fc7\u5927\uff08${textBytes.length} \u5b57\u8282\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB\u3002`);
+            updateQRStats(textBytes.length, 0, 0);
+            state.isGenerating = false;
+            return;
+          }
+        }
+
+        let transmission;
+        try {
+          transmission = buildTransmissionPayload(state.inputMode, payload);
+        } catch (error) {
+          state.isGenerating = false;
+          setQRStatus(`\u9884\u5904\u7406\u5931\u8d25\uff1a${error.message}`);
+          return;
+        }
+
+        const chunkSize = getChunkSizeByEcc(errorLevel);
+        const segments = splitV5BinarySegments(
+          transmission.metaBytes,
+          transmission.payloadBytes,
+          chunkSize
+        );
+
+        if (segments.length > MAX_SEGMENT_COUNT) {
+          setQRStatus(`\u9884\u8ba1\u4e8c\u7ef4\u7801 ${segments.length} \u5f20\uff0c\u8d85\u8fc7\u4e0a\u9650 ${MAX_SEGMENT_COUNT} \u5f20\uff0c\u5df2\u4e2d\u6b62\u751f\u6210\u3002`);
+          updateQRStats(transmission.rawLength, transmission.processedLength, segments.length);
+          state.isGenerating = false;
+          return;
+        }
+
+        state.compressed = transmission.combined;
+        updateQRStats(transmission.rawLength, transmission.processedLength, segments.length);
+        setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 0 / ${segments.length}`);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        for (let index = 0; index < segments.length; index++) {
+          if (token !== state.generationToken) {
+            state.isGenerating = false;
+            return;
+          }
+
+          setQRStatus(`\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801 ${index + 1} / ${segments.length}`);
+          await new Promise((resolve) => setTimeout(resolve, 0));
+
+          let dataUrl;
+          try {
+            dataUrl = await createQRCodeDataUrl(segments[index], qrSize, errorLevel);
+          } catch (error) {
+            state.isGenerating = false;
+            setQRStatus(`\u7b2c ${index + 1} \u5f20\u751f\u6210\u5931\u8d25\uff1a${error.message}`);
+            return;
+          }
+
+          if (token !== state.generationToken) {
+            state.isGenerating = false;
+            return;
+          }
+
+          state.qrImages.push({
+            name: `qrcode-${index + 1}-of-${segments.length}.png`,
+            dataUrl,
+          });
+
+          if ((index + 1) % 8 === 0 || index === segments.length - 1) {
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+          }
+        }
+
+        if (token !== state.generationToken) {
+          state.isGenerating = false;
+          return;
+        }
+
+        state.isGenerating = false;
+        const strategyText =
+          transmission.strategy === "force"
+            ? "\u5f3a\u5236\u538b\u7f29"
+            : transmission.strategy === "auto"
+              ? "\u81ea\u52a8\u538b\u7f29"
+              : "\u672a\u538b\u7f29";
+        setQRStatus(
+          `\u751f\u6210\u6210\u529f\uff0c\u5171 ${segments.length} \u5f20\u4e8c\u7ef4\u7801\u3002\u7b56\u7565${strategyText}\uff0c\u5904\u7406\u540e ${transmission.processedLength} \u5b57\u8282\u3002`
+        );
+        setBatchDownloadEnabled(state.qrImages.length > 0);
+        setShowQrEnabled(state.qrImages.length > 0);
+        setShowCompressedEnabled(Boolean(state.compressed));
+      }
+
+      function decodeImage(dataUrl) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = function () {
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            canvas.width = image.width;
+            canvas.height = image.height;
+            context.drawImage(image, 0, 0);
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+            if (!code) {
+              reject(new Error("\u672a\u8bc6\u522b\u5230\u4e8c\u7ef4\u7801"));
+              return;
+            }
+
+            resolve({
+              text: code.data || "",
+              bytes: code.binaryData ? new Uint8Array(code.binaryData) : null,
+            });
+          };
+          image.onerror = () => reject(new Error("\u56fe\u7247\u52a0\u8f7d\u5931\u8d25"));
+          image.src = dataUrl;
+        });
+      }
+
+      async function handleDecodeFiles(files) {
+        if (!files || !files.length) return;
+
+        clearDecodeError();
+        state.segmentsData = null;
+        state.expectedTotal = 0;
+        state.segmentMeta = null;
+        state.decodedFile = null;
+
+        const dropZoneEl = document.getElementById("dropZone");
+        const list = document.getElementById("decodeDropList");
+        const fileList = Array.from(files);
+        list.innerHTML = "";
+        list.classList.remove("hidden");
+        dropZoneEl.classList.add("has-items");
+
+        for (let index = 0; index < fileList.length; index++) {
+          const file = fileList[index];
+          const item = document.createElement("div");
+          item.className = "dropzone-item";
+
+          const status = document.createElement("div");
+          status.className = "decode-item-status decode-item-bar";
+          status.textContent = `正在解码 (${index + 1}/${fileList.length})`;
+          item.appendChild(status);
+
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "decode-item-remove";
+          removeBtn.textContent = "×";
+          removeBtn.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            item.remove();
+            if (!list.children.length) {
+              clearDecodeDropList();
+            }
+          });
+          item.appendChild(removeBtn);
+          list.appendChild(item);
+
+          try {
+            const dataUrl = await readFileAsDataURL(file);
+            const decodedImage = await decodeImage(dataUrl);
+            const decoded = decodePayload(decodedImage.bytes || decodedImage.text);
+            if (decodedImage.text) {
+              document.getElementById("decodeText").value = decodedImage.text;
+            }
+            setDecodeResult(decoded.text, decoded.canDownload, decoded);
+
+            const info = decoded.segmentInfo;
+            if (info) {
+              status.textContent = `解码成功 (${info.currentSegment}/${info.totalSegments})`;
+            } else if (decoded.canDownload) {
+              status.textContent = `解码成功 (${index + 1}/${fileList.length})`;
+            } else {
+              status.textContent = `\u89e3\u7801\u8fdb\u884c\u4e2d (${index + 1}/${fileList.length})`;
+            }
+            status.classList.toggle("success", Boolean(info) || decoded.canDownload);
+            status.classList.remove("error");
+            clearDecodeError();
+          } catch (error) {
+            setDecodeResult("解码失败", false);
+            setDecodeError(error.message);
+            status.textContent = `解码失败 (${index + 1}/${fileList.length})`;
+            status.classList.remove("success");
+            status.classList.add("error");
+          }
+        }
+      }
+
+      function decodePayload(input) {
+        let raw = "";
+        let rawBytes = null;
+
+        if (input instanceof Uint8Array) {
+          rawBytes = input;
+          raw = bytesToBinaryString(input);
+        } else {
+          raw = String(input || "");
+          rawBytes = binaryStringToBytes(raw);
+        }
+
+        if (!raw.length && (!rawBytes || rawBytes.length === 0)) {
+          throw new Error("\u8bf7\u8f93\u5165\u4e8c\u7ef4\u7801\u5185\u5bb9");
+        }
+
+        const v5Frame = parseV5Frame(rawBytes);
+        if (v5Frame) {
+          if (!state.segmentsData || state.expectedTotal !== v5Frame.total) {
+            state.segmentsData = new Array(v5Frame.total).fill(null);
+            state.expectedTotal = v5Frame.total;
+            state.segmentMeta = null;
+          }
+
+          state.segmentsData[v5Frame.current - 1] = v5Frame;
+          if ((v5Frame.flags & 1) === 1) {
+            state.segmentMeta = JSON.parse(new TextDecoder().decode(v5Frame.payload));
+          }
+
+          const missing = state.segmentsData
+            .map((segment, index) => (segment === null ? index + 1 : null))
+            .filter((item) => item !== null);
+
+          if (missing.length > 0) {
+            return {
+              text: `\u5df2\u63a5\u6536 ${v5Frame.total - missing.length} / ${v5Frame.total} \u6bb5\uff0c\u7f3a\u5c11\uff1a${missing.join(", ")}`,
+              canDownload: false,
+              segmentInfo: {
+                currentSegment: v5Frame.current,
+                totalSegments: v5Frame.total,
+                missing,
+              },
+            };
+          }
+
+          if (!state.segmentMeta) {
+            throw new Error("\u7f3a\u5c11\u5143\u6570\u636e\u5206\u7247");
+          }
+
+          const dataFrames = state.segmentsData.filter((frame) => (frame.flags & 2) === 2);
+          const totalBytes = dataFrames.reduce((sum, frame) => sum + frame.payload.length, 0);
+          const dataBytes = new Uint8Array(totalBytes);
+          let offset = 0;
+          dataFrames.forEach((frame) => {
+            dataBytes.set(frame.payload, offset);
+            offset += frame.payload.length;
+          });
+
+          const finalBytes = rebuildPayloadBytes(state.segmentMeta, dataBytes);
+
+          state.segmentsData = null;
+          state.expectedTotal = 0;
+
+          if (state.segmentMeta.kind === "file") {
+            return {
+              text: `\u6587\u4ef6\u89e3\u7801\u6210\u529f\uff1a${state.segmentMeta.name || "decoded.bin"} (${formatFileSize(finalBytes.length)})`,
+              canDownload: true,
+              decodedFile: {
+                name: state.segmentMeta.name || "decoded.bin",
+                type: state.segmentMeta.type || "application/octet-stream",
+                bytes: finalBytes,
+              },
+              segmentInfo: {
+                currentSegment: v5Frame.total,
+                totalSegments: v5Frame.total,
+                missing: [],
+              },
+            };
+          }
+
+          return {
+            text: new TextDecoder().decode(finalBytes),
+            canDownload: true,
+            segmentInfo: {
+              currentSegment: v5Frame.total,
+              totalSegments: v5Frame.total,
+              missing: [],
+            },
+          };
+        }
+
+        const value = raw.trim();
+        if (!value) {
+          throw new Error("\u8bf7\u8f93\u5165\u4e8c\u7ef4\u7801\u5185\u5bb9");
+        }
+
+        if (value.startsWith("v5t|")) {
+          const parts = value.split("|");
+          if (parts.length !== 3) {
+            throw new Error("v5t \u6587\u672c\u683c\u5f0f\u65e0\u6548");
+          }
+          const metaObj = parseMetaBase64Url(parts[1]);
+          const payloadBytes = base64UrlToBytes(parts[2]);
+          const finalBytes = rebuildPayloadBytes(metaObj, payloadBytes);
+          if (metaObj.kind === "file") {
+            return {
+              text: `\u6587\u4ef6\u89e3\u7801\u6210\u529f\uff1a${metaObj.name || "decoded.bin"} (${formatFileSize(finalBytes.length)})`,
+              canDownload: true,
+              decodedFile: {
+                name: metaObj.name || "decoded.bin",
+                type: metaObj.type || "application/octet-stream",
+                bytes: finalBytes,
+              },
+            };
+          }
+          return {
+            text: new TextDecoder().decode(finalBytes),
+            canDownload: true,
+          };
+        }
+
+        if (!value.startsWith("v1") && !value.startsWith("v2") && !value.startsWith("v3") && !value.startsWith("v4")) {
+          try {
+            const decompressed = LZString.decompressFromEncodedURIComponent(value);
+            return { text: decompressed || value, canDownload: true };
+          } catch (error) {
+            return { text: value, canDownload: true };
+          }
+        }
+
+        throw new Error("\u5f53\u524d\u4ec5\u652f\u6301 v5/v5t \u6570\u636e\u3002\u65e7\u7248 v1-v4 \u8bf7\u4f7f\u7528\u65e7\u7248\u6d41\u7a0b\u3002");
       }
 
       const dropZone = document.getElementById("dropZone");
@@ -1729,6 +2194,10 @@
       setOptionChip("ecc", state.qrEcc);
       reorderActionButtons();
       switchQRInputMode("file");
+      syncCompressionControls();
     </script>
   </body>
 </html>
+
+
+
