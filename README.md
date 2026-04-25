@@ -58,3 +58,8 @@
 - 大文件会生成大量二维码，生成与解析都可能耗时较长，属于正常现象。
 - 本工具为纯前端处理，数据默认只在本地浏览器内存中处理，不会主动上传到服务器。
 - 若浏览器内存较小或同时打开大量标签页，处理大体积数据时可能出现性能下降。
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=SculptureTime/file_transfer&type=Date)](https://www.star-history.com/#SculptureTime/file_transfer&Date)
+
