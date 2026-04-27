@@ -23,6 +23,15 @@
         --danger: #ff5d5d;
         --success: #4be28b;
         --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+        --qr-input-height: 190px;
+        --qr-mode-height: 256px;
+      }
+
+      html {
+        background:
+          radial-gradient(circle at top left, rgba(73, 199, 255, 0.16), transparent 26%),
+          radial-gradient(circle at top right, rgba(255, 159, 26, 0.16), transparent 28%),
+          linear-gradient(180deg, #091019 0%, #0e1116 100%);
       }
 
       * {
@@ -44,13 +53,15 @@
           radial-gradient(circle at top left, rgba(73, 199, 255, 0.16), transparent 26%),
           radial-gradient(circle at top right, rgba(255, 159, 26, 0.16), transparent 28%),
           linear-gradient(180deg, #091019 0%, #0e1116 100%);
-        padding: 18px;
+        min-height: 100vh;
+        height: 100vh;
+        padding: clamp(10px, 2vh, 18px);
       }
 
       .app {
         max-width: 1200px;
         margin: 0 auto;
-        height: 100%;
+        height: calc(100vh - clamp(20px, 4vh, 36px));
         display: flex;
         flex-direction: column;
         min-height: 0;
@@ -62,7 +73,7 @@
         border-radius: 24px;
         padding: 24px;
         box-shadow: var(--shadow);
-        margin-bottom: 20px;
+        margin-bottom: clamp(12px, 2vh, 20px);
       }
 
       .hero-top {
@@ -110,7 +121,7 @@
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 14px;
-        margin: 18px 0 16px;
+        margin: clamp(10px, 1.8vh, 18px) 0 clamp(10px, 1.6vh, 16px);
       }
 
       .tab {
@@ -147,6 +158,7 @@
         box-shadow: var(--shadow);
         overflow: hidden;
         flex: 1;
+        height: 100%;
         min-height: 0;
       }
 
@@ -174,6 +186,7 @@
       .panel-body {
         padding: 16px 18px;
         flex: 1;
+        height: 100%;
         min-height: 0;
         overflow: hidden;
       }
@@ -181,6 +194,37 @@
       .grid {
         display: grid;
         gap: 14px;
+      }
+
+      #text-qr .panel-body {
+        grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+        align-content: start;
+      }
+
+      #text-qr .panel-body > .card:first-child {
+        grid-row: span 2;
+        display: grid;
+        grid-template-rows: auto var(--qr-mode-height) auto auto;
+        min-height: 0;
+      }
+
+      #qr-decode .panel-body {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: auto minmax(0, 1fr);
+        align-content: stretch;
+        height: 100%;
+      }
+
+      #qr-decode .panel-body > .card:last-child {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      #qr-decode .compact-output {
+        flex: 1;
+        max-height: none;
       }
 
       .card {
@@ -269,9 +313,9 @@
       }
 
       #qrTextInput {
-        min-height: 190px;
-        height: 190px;
-        max-height: 190px;
+        min-height: var(--qr-input-height);
+        height: var(--qr-input-height);
+        max-height: var(--qr-input-height);
         resize: none;
         overflow: auto;
       }
@@ -323,9 +367,9 @@
         border-radius: 18px;
         background: rgba(255, 255, 255, 0.03);
         padding: 16px;
-        height: 190px;
-        min-height: 190px;
-        max-height: 190px;
+        height: var(--qr-input-height);
+        min-height: var(--qr-input-height);
+        max-height: var(--qr-input-height);
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -335,6 +379,26 @@
         cursor: pointer;
         transition: border-color 0.15s ease, background 0.15s ease;
         overflow: hidden;
+      }
+
+      #qrFileMode,
+      #qrTextMode {
+        height: var(--qr-mode-height);
+        min-height: var(--qr-mode-height);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      #qrFileMode .toolbar,
+      #qrTextMode .toolbar {
+        flex-shrink: 0;
+        margin-bottom: 0;
+      }
+
+      #qrFileDropZone,
+      #qrTextInput {
+        flex: 0 0 var(--qr-input-height);
       }
 
       .dropzone.dragover {
@@ -484,6 +548,7 @@
       .option-field {
         display: grid;
         gap: 10px;
+        align-content: start;
       }
 
       .option-field label {
@@ -496,6 +561,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
+        align-items: flex-start;
       }
 
       .option-chip {
@@ -509,6 +575,7 @@
         font-size: 0.92rem;
         line-height: 1;
         cursor: pointer;
+        align-self: flex-start;
         transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease,
           color 0.15s ease;
       }
@@ -700,6 +767,21 @@
           grid-template-columns: 1fr;
         }
 
+        #text-qr .panel-body,
+        #qr-decode .panel-body {
+          grid-template-columns: 1fr;
+        }
+
+        #text-qr .panel-body > .card:first-child,
+        #qr-decode .panel-body > .card:last-child {
+          grid-row: auto;
+          grid-column: auto;
+        }
+
+        #text-qr .panel-body > .card:first-child {
+          grid-template-rows: auto var(--qr-mode-height) auto auto;
+        }
+
         .file-grid.two,
         .file-preview {
           grid-template-columns: 1fr;
@@ -707,6 +789,126 @@
 
         .qr-options {
           grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-height: 850px) {
+        :root {
+          --qr-input-height: 112px;
+          --qr-mode-height: 158px;
+        }
+
+        .hero {
+          padding: 16px 18px;
+        }
+
+        .brand {
+          gap: 4px;
+        }
+
+        .brand h1 {
+          font-size: clamp(1.35rem, 2.4vw, 1.8rem);
+        }
+
+        .brand p,
+        .panel-header p,
+        .hint,
+        .small {
+          font-size: 0.88rem;
+        }
+
+        .badge {
+          padding: 6px 10px;
+          font-size: 0.82rem;
+        }
+
+        .tab {
+          padding: 12px 16px;
+        }
+
+        .panel-header {
+          padding: 12px 16px;
+        }
+
+        .panel-body {
+          padding: 10px 12px;
+        }
+
+        .grid {
+          gap: 10px;
+        }
+
+        .card {
+          padding: 10px 12px;
+        }
+
+        .card h3 {
+          margin-bottom: 8px;
+        }
+
+        .toolbar {
+          gap: 8px;
+          margin: 8px 0;
+        }
+
+        .btn {
+          padding: 10px 14px;
+        }
+
+        .qr-options {
+          gap: 10px;
+          margin-top: 10px;
+        }
+
+        textarea {
+          min-height: 110px;
+        }
+
+        .stat {
+          padding: 10px 12px;
+        }
+
+        .stat .value {
+          font-size: 1rem;
+        }
+      }
+
+      @media (max-height: 720px) {
+        :root {
+          --qr-input-height: 92px;
+          --qr-mode-height: 136px;
+        }
+
+        .hero {
+          padding: 12px 14px;
+        }
+
+        .badge-row {
+          gap: 6px;
+        }
+
+        .panel-header {
+          padding: 12px 14px;
+        }
+
+        .panel-header h2 {
+          font-size: 1.12rem;
+        }
+
+        .panel-body {
+          padding: 10px;
+        }
+
+        .btn {
+          padding: 9px 12px;
+        }
+
+        .option-chip {
+          padding: 9px 11px;
+        }
+
+        textarea {
+          min-height: 104px;
         }
       }
     </style>
@@ -718,7 +920,7 @@
           <div class="brand">
             <h1>数据传输工具箱</h1>
             <p>
-              支持文件转 Base64、Base64 还原文件、文本生成二维码，以及二维码文本/图片解码。
+              支持文件、文本生成二维码，以及二维码文本、图片解码。
             </p>
           </div>
           <div class="badge-row">
@@ -820,7 +1022,6 @@
               <button id="showCompressedBtn" class="btn btn-secondary" onclick="previewCompressedResult()" disabled>压缩结果</button>
               <button id="showQrBtn" class="btn btn-secondary" onclick="openQrGallery()" disabled>显示二维码</button>
             </div>
-            <div class="hint" id="qrModeHint">当前模式：文件输入</div>
           </div>
 
           <div class="card">
@@ -1510,8 +1711,6 @@
         state.inputMode = mode;
         document.getElementById("qrFileMode").classList.toggle("hidden", mode !== "file");
         document.getElementById("qrTextMode").classList.toggle("hidden", mode !== "text");
-        document.getElementById("qrModeHint").textContent =
-          mode === "file" ? "\u5f53\u524d\u6a21\u5f0f\uff1a\u6587\u4ef6\u8f93\u5165" : "\u5f53\u524d\u6a21\u5f0f\uff1a\u6587\u672c\u8f93\u5165";
 
         if (mode === "text") {
           const textarea = document.getElementById("qrTextInput");
