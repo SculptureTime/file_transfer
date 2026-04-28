@@ -248,7 +248,7 @@ async function renderQrImage(payloadBuffer, finalSize, errorLevel) {
   qr.make();
 
   const moduleCount = qr.getModuleCount();
-  const padding = Math.max(48, Math.round(finalSize * 0.09765625));
+  const padding = Math.max(18, Math.round(finalSize * 0.05));
   const qrArea = Math.max(128, finalSize - padding * 2);
   const cell = Math.max(1, Math.floor(qrArea / moduleCount));
   const drawSize = cell * moduleCount;

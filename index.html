@@ -290,7 +290,8 @@
       }
 
       textarea,
-      input[type="text"] {
+      input[type="text"],
+      input[type="number"] {
         width: 100%;
         border-radius: 14px;
         border: 1px solid rgba(255, 255, 255, 0.12);
@@ -302,7 +303,8 @@
       }
 
       textarea:focus,
-      input[type="text"]:focus {
+      input[type="text"]:focus,
+      input[type="number"]:focus {
         border-color: rgba(73, 199, 255, 0.65);
         box-shadow: 0 0 0 4px rgba(73, 199, 255, 0.12);
       }
@@ -613,14 +615,32 @@
         display: flex;
       }
 
+      .modal.fullscreen {
+        padding: 0;
+      }
+
       .modal-card {
         width: min(860px, 100%);
         max-height: min(90vh, 900px);
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
         background: rgba(22, 27, 34, 0.98);
         border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 24px;
         box-shadow: var(--shadow);
+      }
+
+      .modal.qr-gallery-modal .modal-card {
+        width: min(1000px, 100%);
+        height: min(90vh, 900px);
+      }
+
+      .modal.fullscreen .modal-card {
+        width: 100%;
+        height: 100%;
+        max-height: none;
+        border-radius: 0;
       }
 
       .modal-header {
@@ -637,22 +657,40 @@
         font-size: 1.15rem;
       }
 
-      .modal-close {
+      .modal-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .modal-icon-btn {
         appearance: none;
         border: 1px solid rgba(255, 255, 255, 0.12);
         background: rgba(255, 255, 255, 0.08);
         color: var(--text);
         border-radius: 999px;
-        width: 40px;
+        min-width: 40px;
         height: 40px;
+        padding: 0 12px;
         cursor: pointer;
-        font-size: 1.1rem;
+        font: inherit;
+        font-size: 0.92rem;
       }
 
       .modal-body {
         padding: 22px;
+        flex: 1;
+        min-height: 0;
         max-height: calc(90vh - 90px);
         overflow: auto;
+      }
+
+      .modal.fullscreen .modal-body,
+      .modal.qr-gallery-modal .modal-body {
+        max-height: none;
+      }
+
+      .modal.qr-gallery-modal .modal-body {
+        overflow: hidden;
       }
 
       .modal-preview-image {
@@ -667,36 +705,105 @@
 
       .qr-gallery {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 16px;
+        grid-template-columns: repeat(var(--qr-gallery-cols, 2), minmax(0, 1fr));
+        grid-template-rows: repeat(var(--qr-gallery-rows, 2), minmax(0, 1fr));
+        gap: 10px;
+        min-height: 0;
+        height: 100%;
+      }
+
+      .qr-gallery-view {
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto;
+        gap: 14px;
+        height: 100%;
+        min-height: 0;
       }
 
       .qr-gallery-item {
-        border-radius: 18px;
+        border-radius: 14px;
         background: rgba(255, 255, 255, 0.04);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 14px;
+        padding: 4px;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
       }
 
       .qr-gallery-item img {
         width: 100%;
+        height: 100%;
         display: block;
+        object-fit: contain;
+        box-sizing: border-box;
         background: #fff;
-        padding: 12px;
-        border-radius: 14px;
+        padding: 8px;
+        border-radius: 10px;
       }
 
-      .qr-gallery-item .caption {
-        margin-top: 10px;
+      .qr-gallery-pager {
+        display: grid;
+        grid-template-columns: auto minmax(24px, 1fr) auto auto auto auto;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        background: rgba(22, 27, 34, 0.96);
+      }
+
+      .qr-gallery-page-info {
         color: var(--muted);
-        font-size: 0.9rem;
+        text-align: center;
+        font-size: 0.92rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        white-space: nowrap;
+      }
+
+      .qr-gallery-jump {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        white-space: nowrap;
+        margin-left: 12px;
+      }
+
+      .qr-gallery-jump .btn {
+        flex: 0 0 auto;
+      }
+
+      .qr-gallery-page-input {
+        width: 48px;
+        height: 42px;
+        padding: 8px 6px;
         text-align: center;
       }
 
-      .qr-download-btn {
-        margin-top: 10px;
-        width: 100%;
-        padding: 10px 12px;
+      .qr-gallery-page-input::-webkit-outer-spin-button,
+      .qr-gallery-page-input::-webkit-inner-spin-button {
+        margin: 0;
+        appearance: none;
+        -webkit-appearance: none;
+      }
+
+      .qr-gallery-page-input[type="number"] {
+        appearance: textfield;
+        -moz-appearance: textfield;
+      }
+
+      .qr-gallery-download {
+        grid-column: 1;
+        grid-row: 1;
+      }
+
+      .qr-gallery-spacer {
+        grid-column: 2;
+        min-width: 0;
       }
 
       .modal-pre {
@@ -789,6 +896,21 @@
 
         .qr-options {
           grid-template-columns: 1fr;
+        }
+
+        .qr-gallery-pager {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .qr-gallery-page-info,
+        .qr-gallery-jump,
+        .qr-gallery-download,
+        .qr-gallery-spacer {
+          grid-column: 1 / -1;
+        }
+
+        .qr-gallery-spacer {
+          display: none;
         }
       }
 
@@ -1094,7 +1216,10 @@
       <div class="modal-card">
         <div class="modal-header">
           <h3 id="modalTitle">预览</h3>
-          <button class="modal-close" type="button" onclick="closeModal()">×</button>
+          <div class="modal-actions">
+            <button id="modalFullscreenBtn" class="modal-icon-btn" type="button" onclick="toggleModalFullscreen()">全屏</button>
+            <button class="modal-icon-btn modal-close" type="button" onclick="closeModal()">×</button>
+          </div>
         </div>
         <div id="modalBody" class="modal-body"></div>
       </div>
@@ -1686,12 +1811,19 @@
         }
       }
 
-      function openModal(title, bodyNode) {
+      function openModal(title, bodyNode, options = {}) {
         const modal = document.getElementById("modal");
         const modalTitle = document.getElementById("modalTitle");
         const modalBody = document.getElementById("modalBody");
+        const fullscreenBtn = document.getElementById("modalFullscreenBtn");
         modalTitle.textContent = title;
         modalBody.innerHTML = "";
+        modalBody.className = "modal-body";
+        modal.classList.remove("fullscreen", "qr-gallery-modal");
+        if (options.gallery) {
+          modal.classList.add("qr-gallery-modal");
+        }
+        fullscreenBtn.textContent = "\u5168\u5c4f";
         modalBody.appendChild(bodyNode);
         modal.classList.add("open");
         modal.setAttribute("aria-hidden", "false");
@@ -1700,7 +1832,15 @@
       function closeModal() {
         const modal = document.getElementById("modal");
         modal.classList.remove("open");
+        modal.classList.remove("fullscreen", "qr-gallery-modal");
         modal.setAttribute("aria-hidden", "true");
+      }
+
+      function toggleModalFullscreen() {
+        const modal = document.getElementById("modal");
+        const fullscreenBtn = document.getElementById("modalFullscreenBtn");
+        const isFullscreen = modal.classList.toggle("fullscreen");
+        fullscreenBtn.textContent = isFullscreen ? "\u9000\u51fa\u5168\u5c4f" : "\u5168\u5c4f";
       }
 
       function openQRFilePicker() {
@@ -1974,38 +2114,214 @@
       function openQrGallery() {
         if (!state.qrImages.length) return;
 
+        let page = 1;
+        let gridSize = 2;
+        const maxGridSize = 20;
+        const wrap = document.createElement("div");
+        wrap.className = "qr-gallery-view";
+
         const gallery = document.createElement("div");
         gallery.className = "qr-gallery";
+        wrap.appendChild(gallery);
 
-        state.qrImages.forEach((item, index) => {
-          const tile = document.createElement("div");
-          tile.className = "qr-gallery-item";
+        const pager = document.createElement("div");
+        pager.className = "qr-gallery-pager";
 
-          const img = document.createElement("img");
-          img.alt = item.name;
-          img.src = item.dataUrl;
-          tile.appendChild(img);
+        const downloadPageBtn = document.createElement("button");
+        downloadPageBtn.type = "button";
+        downloadPageBtn.className = "btn btn-primary qr-gallery-download";
+        downloadPageBtn.textContent = "\u4e0b\u8f7d\u5f53\u524d\u9875\u4e8c\u7ef4\u7801";
+        pager.appendChild(downloadPageBtn);
 
-          const caption = document.createElement("div");
-          caption.className = "caption";
-          caption.textContent = `\u7b2c ${index + 1} \u5f20`;
-          tile.appendChild(caption);
+        const pagerSpacer = document.createElement("div");
+        pagerSpacer.className = "qr-gallery-spacer";
+        pager.appendChild(pagerSpacer);
 
-          const singleDownload = document.createElement("button");
-          singleDownload.type = "button";
-          singleDownload.className = "btn btn-secondary qr-download-btn";
-          singleDownload.textContent = "\u4e0b\u8f7d\u6b64\u56fe";
-          singleDownload.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            downloadFile(item.dataUrl, item.name);
+        const prevBtn = document.createElement("button");
+        prevBtn.type = "button";
+        prevBtn.className = "btn btn-secondary";
+        prevBtn.textContent = "\u4e0a\u4e00\u9875";
+        pager.appendChild(prevBtn);
+
+        const center = document.createElement("div");
+        center.className = "qr-gallery-page-info";
+        pager.appendChild(center);
+
+        const nextBtn = document.createElement("button");
+        nextBtn.type = "button";
+        nextBtn.className = "btn btn-secondary";
+        nextBtn.textContent = "\u4e0b\u4e00\u9875";
+        pager.appendChild(nextBtn);
+
+        const gridSizeInput = document.createElement("input");
+        gridSizeInput.type = "number";
+        gridSizeInput.min = "1";
+        gridSizeInput.max = String(maxGridSize);
+        gridSizeInput.step = "1";
+        gridSizeInput.value = String(gridSize);
+        gridSizeInput.className = "qr-gallery-page-input";
+        gridSizeInput.title = "\u6bcf\u9875\u5c55\u793a n*n";
+        gridSizeInput.setAttribute("aria-label", "\u6bcf\u9875\u5c55\u793a n*n");
+
+        const jumpControls = document.createElement("div");
+        jumpControls.className = "qr-gallery-jump";
+
+        const jumpLabel = document.createElement("span");
+        jumpLabel.textContent = "\u8df3\u5230";
+        jumpControls.appendChild(jumpLabel);
+
+        const pageInput = document.createElement("input");
+        pageInput.type = "number";
+        pageInput.min = "1";
+        pageInput.step = "1";
+        pageInput.className = "qr-gallery-page-input";
+        jumpControls.appendChild(pageInput);
+
+        const jumpSuffix = document.createElement("span");
+        jumpSuffix.textContent = "\u9875";
+        jumpControls.appendChild(jumpSuffix);
+
+        const jumpBtn = document.createElement("button");
+        jumpBtn.type = "button";
+        jumpBtn.className = "btn btn-secondary";
+        jumpBtn.textContent = "\u8df3\u8f6c";
+        jumpControls.appendChild(jumpBtn);
+        pager.appendChild(jumpControls);
+
+        wrap.appendChild(pager);
+
+        function getItemsPerPage() {
+          return gridSize * gridSize;
+        }
+
+        function getTotalPages() {
+          return Math.max(1, Math.ceil(state.qrImages.length / getItemsPerPage()));
+        }
+
+        function clampGridSize(value) {
+          const parsed = Number.parseInt(value, 10);
+          if (!Number.isFinite(parsed)) return 1;
+          return Math.min(maxGridSize, Math.max(1, parsed));
+        }
+
+        function getCurrentPageItems() {
+          const itemsPerPage = getItemsPerPage();
+          const start = (page - 1) * itemsPerPage;
+          return state.qrImages.slice(start, start + itemsPerPage);
+        }
+
+        function renderPage() {
+          const totalPages = getTotalPages();
+          page = Math.min(totalPages, Math.max(1, page));
+          const itemsPerPage = getItemsPerPage();
+          const pageItems = getCurrentPageItems();
+          const fragment = document.createDocumentFragment();
+
+          gallery.innerHTML = "";
+          gallery.style.setProperty("--qr-gallery-cols", String(gridSize));
+          gallery.style.setProperty("--qr-gallery-rows", String(gridSize));
+
+          pageItems.forEach((item) => {
+            const tile = document.createElement("div");
+            tile.className = "qr-gallery-item";
+
+            const img = document.createElement("img");
+            img.alt = item.name;
+            img.src = item.dataUrl;
+            tile.appendChild(img);
+
+            fragment.appendChild(tile);
           });
-          tile.appendChild(singleDownload);
 
-          gallery.appendChild(tile);
+          for (let i = pageItems.length; i < itemsPerPage; i++) {
+            const placeholder = document.createElement("div");
+            placeholder.className = "qr-gallery-item";
+            placeholder.style.visibility = "hidden";
+            fragment.appendChild(placeholder);
+          }
+
+          gallery.appendChild(fragment);
+          center.textContent = "";
+          center.append("\u7b2c ", String(page), " / ", String(totalPages), " \u9875\uff0c\u5f53\u524d ");
+          center.appendChild(gridSizeInput);
+          center.append("*", String(gridSize), "\uff0c\u5171 ", String(state.qrImages.length), " \u5f20");
+          prevBtn.disabled = page <= 1;
+          nextBtn.disabled = page >= totalPages;
+          gridSizeInput.value = String(gridSize);
+          pageInput.max = String(totalPages);
+          pageInput.value = String(page);
+          downloadPageBtn.disabled = pageItems.length === 0;
+        }
+
+        prevBtn.addEventListener("click", () => {
+          page -= 1;
+          renderPage();
         });
 
-        openModal("\u4e8c\u7ef4\u7801\u5217\u8868", gallery);
+        nextBtn.addEventListener("click", () => {
+          page += 1;
+          renderPage();
+        });
+
+        gridSizeInput.addEventListener("change", () => {
+          gridSize = clampGridSize(gridSizeInput.value);
+          page = 1;
+          renderPage();
+        });
+
+        gridSizeInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            gridSize = clampGridSize(gridSizeInput.value);
+            page = 1;
+            renderPage();
+          }
+        });
+
+        function jumpToInputPage() {
+          const parsed = Number.parseInt(pageInput.value, 10);
+          if (!Number.isFinite(parsed)) {
+            pageInput.value = String(page);
+            return;
+          }
+          page = Math.min(getTotalPages(), Math.max(1, parsed));
+          renderPage();
+        }
+
+        jumpBtn.addEventListener("click", jumpToInputPage);
+
+        pageInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            jumpToInputPage();
+          }
+        });
+
+        downloadPageBtn.addEventListener("click", async () => {
+          const pageItems = getCurrentPageItems();
+          if (!pageItems.length) return;
+
+          const originalText = downloadPageBtn.textContent;
+          setButtonLoading(downloadPageBtn, true, "\u4e0b\u8f7d\u4e2d...");
+          try {
+            if (pageItems.length === 1) {
+              const only = pageItems[0];
+              downloadFile(only.dataUrl, only.name);
+              return;
+            }
+
+            const zip = new JSZip();
+            pageItems.forEach((item) => {
+              zip.file(item.name, dataURLtoBlob(item.dataUrl));
+            });
+            const blob = await zip.generateAsync({ type: "blob" });
+            downloadBlob(blob, `qrcode-page-${page}.zip`);
+          } finally {
+            setButtonLoading(downloadPageBtn, false);
+            downloadPageBtn.textContent = originalText;
+          }
+        });
+
+        renderPage();
+        openModal("\u4e8c\u7ef4\u7801\u5217\u8868", wrap, { gallery: true });
       }
 
       function previewCompressedResult() {
@@ -2097,7 +2413,7 @@
       async function renderQrFromMatrixToDataUrl(matrixBuffer, moduleCount, finalSize) {
         return new Promise((resolve, reject) => {
           const matrix = new Uint8Array(matrixBuffer);
-          const padding = Math.max(48, Math.round(finalSize * 0.09765625));
+          const padding = Math.max(18, Math.round(finalSize * 0.05));
           const qrArea = Math.max(128, finalSize - padding * 2);
           const cell = Math.max(1, Math.floor(qrArea / moduleCount));
           const drawSize = cell * moduleCount;
@@ -2170,7 +2486,7 @@
             qr.make();
 
             const moduleCount = qr.getModuleCount();
-            const padding = Math.max(48, Math.round(finalSize * 0.09765625));
+            const padding = Math.max(18, Math.round(finalSize * 0.05));
             const qrArea = Math.max(128, finalSize - padding * 2);
             const cell = Math.max(1, Math.floor(qrArea / moduleCount));
             const drawSize = cell * moduleCount;
