@@ -41,6 +41,7 @@
 2. 按需设置二维码大小、纠错等级、压缩策略
 3. 点击“生成二维码”
 4. 可通过以下按钮操作结果：
+
 - “压缩结果”：查看/复制文本结果（在结果较小可展示时）
 - “显示二维码”：弹窗查看全部二维码
 - “批量下载”：下载全部二维码（多张为 ZIP）
@@ -62,3 +63,24 @@
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/image?repos=SculptureTime/file_transfer&type=Date)](https://www.star-history.com/#SculptureTime/file_transfer&Date)
+
+## 离线并行生成与开发检查
+
+直接双击 `index.html` 也可使用 Worker 并行生成二维码，无需启动服务。请保留完整 `js` 目录；生成进度会显示当前线程模式。浏览器禁用 Worker 时会退回单线程。
+
+压缩与分片在后台预处理；相同输入和设置的统计、正式生成共用结果，避免重复压缩。二维码仍按原协议编号，可继续配合识别工具使用。
+
+修改 Worker 或其依赖后，运行以下命令更新离线脚本，并将生成文件一并保存：
+
+```sh
+node scripts/build-worker.cjs
+```
+
+本地浏览器回归检查使用 Node.js 18+、Playwright 和已安装的 Chrome：
+
+```sh
+npm install --no-save playwright
+node tests/qr-workers.cjs
+```
+
+可用环境变量 `CHROME_PATH` 指定其他 Chromium 浏览器路径。检查包含本地文件多线程生成、二维码逐字节还原、预处理缓存、失败回退及 HTTP 访问，不需要云端测试。

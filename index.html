@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -10,6 +10,7 @@
     <script src="./js/pako.min.js"></script>
     <script src="./js/jsQR.min.js"></script>
     <script src="./js/jszip.min.js"></script>
+    <script src="./js/qr-worker-inline.js"></script>
     <style>
       :root {
         --bg: #0e1116;
@@ -32,9 +33,7 @@
         min-height: 100dvh;
         background:
           radial-gradient(circle at top left, rgba(73, 199, 255, 0.16), transparent 26%),
-          radial-gradient(circle at top right, rgba(255, 159, 26, 0.16), transparent 28%),
-          linear-gradient(180deg, #091019 0%, #0e1116 100%),
-          var(--bg);
+          radial-gradient(circle at top right, rgba(255, 159, 26, 0.16), transparent 28%), linear-gradient(180deg, #091019 0%, #0e1116 100%), var(--bg);
       }
 
       * {
@@ -48,14 +47,17 @@
       }
 
       body {
-        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-          "Segoe UI", sans-serif;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
         color: var(--text);
         background:
           radial-gradient(circle at top left, rgba(73, 199, 255, 0.16), transparent 26%),
-          radial-gradient(circle at top right, rgba(255, 159, 26, 0.16), transparent 28%),
-          linear-gradient(180deg, #091019 0%, #0e1116 100%),
-          var(--bg);
+          radial-gradient(circle at top right, rgba(255, 159, 26, 0.16), transparent 28%), linear-gradient(180deg, #091019 0%, #0e1116 100%), var(--bg);
         min-height: 100dvh;
         padding: var(--page-pad);
         overflow-x: hidden;
@@ -139,7 +141,10 @@
         font-size: 1rem;
         font-weight: 700;
         text-align: center;
-        transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+        transition:
+          transform 0.2s ease,
+          border-color 0.2s ease,
+          color 0.2s ease,
           background 0.2s ease;
       }
 
@@ -257,7 +262,10 @@
         padding: 12px 18px;
         font-weight: 700;
         cursor: pointer;
-        transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+        transition:
+          transform 0.15s ease,
+          opacity 0.15s ease,
+          background 0.15s ease;
       }
 
       .btn:hover {
@@ -294,8 +302,8 @@
       }
 
       textarea,
-      input[type="text"],
-      input[type="number"] {
+      input[type='text'],
+      input[type='number'] {
         width: 100%;
         border-radius: 14px;
         border: 1px solid rgba(255, 255, 255, 0.12);
@@ -307,8 +315,8 @@
       }
 
       textarea:focus,
-      input[type="text"]:focus,
-      input[type="number"]:focus {
+      input[type='text']:focus,
+      input[type='number']:focus {
         border-color: rgba(73, 199, 255, 0.65);
         box-shadow: 0 0 0 4px rgba(73, 199, 255, 0.12);
       }
@@ -383,7 +391,9 @@
         gap: 8px;
         text-align: center;
         cursor: pointer;
-        transition: border-color 0.15s ease, background 0.15s ease;
+        transition:
+          border-color 0.15s ease,
+          background 0.15s ease;
         overflow: hidden;
       }
 
@@ -582,7 +592,10 @@
         line-height: 1;
         cursor: pointer;
         align-self: flex-start;
-        transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease,
+        transition:
+          transform 0.15s ease,
+          border-color 0.15s ease,
+          background 0.15s ease,
           color 0.15s ease;
       }
 
@@ -795,7 +808,7 @@
         -webkit-appearance: none;
       }
 
-      .qr-gallery-page-input[type="number"] {
+      .qr-gallery-page-input[type='number'] {
         appearance: textfield;
         -moz-appearance: textfield;
       }
@@ -1126,9 +1139,7 @@
         <div class="hero-top">
           <div class="brand">
             <h1>数据传输工具箱</h1>
-            <p>
-              支持文件、文本生成二维码，以及二维码文本、图片解码。
-            </p>
+            <p>支持文件、文本生成二维码，以及二维码文本、图片解码。</p>
           </div>
           <div class="badge-row">
             <span class="badge">单页使用</span>
@@ -1139,12 +1150,8 @@
       </section>
 
       <nav class="tabs" aria-label="工具切换">
-        <button class="tab active" data-tab="text-qr" onclick="switchTab('text-qr')">
-          二维码生成
-        </button>
-        <button class="tab" data-tab="qr-decode" onclick="switchTab('qr-decode')">
-          二维码解析
-        </button>
+        <button class="tab active" data-tab="text-qr" onclick="switchTab('text-qr')">二维码生成</button>
+        <button class="tab" data-tab="qr-decode" onclick="switchTab('qr-decode')">二维码解析</button>
       </nav>
 
       <section id="text-qr" class="panel active">
@@ -1156,11 +1163,7 @@
           <div class="card">
             <h3>输入内容</h3>
             <div id="qrFileMode">
-              <div
-                id="qrFileDropZone"
-                class="dropzone"
-                onclick="document.getElementById('qrFileInput').click()"
-              >
+              <div id="qrFileDropZone" class="dropzone" onclick="document.getElementById('qrFileInput').click()">
                 <strong>点击或拖拽文件到这里</strong>
                 <span class="small">文件按原始字节处理，分片后直接生成二维码</span>
                 <div id="qrFilePreview" class="dropzone-preview-inline hidden"></div>
@@ -1202,22 +1205,8 @@
               <div class="option-field">
                 <label>压缩策略</label>
                 <div class="option-chips" data-group="compress">
-                  <button
-                    id="compressAutoBtn"
-                    class="option-chip active"
-                    type="button"
-                    onclick="setCompressionMode('auto')"
-                  >
-                    自动判断
-                  </button>
-                  <button
-                    id="compressForceBtn"
-                    class="option-chip"
-                    type="button"
-                    onclick="setCompressionMode('force')"
-                  >
-                    强制压缩
-                  </button>
+                  <button id="compressAutoBtn" class="option-chip active" type="button" onclick="setCompressionMode('auto')">自动判断</button>
+                  <button id="compressForceBtn" class="option-chip" type="button" onclick="setCompressionMode('force')">强制压缩</button>
                 </div>
               </div>
             </div>
@@ -1292,7 +1281,6 @@
             <div id="decodeResult" class="output compact-output">等待输入。</div>
             <div id="decodeError" class="hint status error hidden"></div>
           </div>
-
         </div>
       </section>
     </div>
@@ -1312,346 +1300,346 @@
 
     <script>
       const state = {
-        inputMode: "file",
+        inputMode: 'file',
         fileBytes: null,
         fileMeta: null,
-        textDraft: "",
-        qrSize: "1024",
-        qrEcc: "Q",
+        textDraft: '',
+        qrSize: '1024',
+        qrEcc: 'Q',
         forceCompress: false,
-        compressed: "",
+        compressed: '',
         qrImages: [],
         isGenerating: false,
         generationToken: 0,
         segmentsData: null,
         expectedTotal: 0,
         segmentMeta: null,
-        decodedPayload: "",
+        decodedPayload: '',
         decodedCanDownload: false,
         decodedFile: null,
         isDecoding: false,
         decodeToken: 0,
-      };
-      const MAX_FILE_SIZE_MB = 20;
-      const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-      const FILE_VOLUME_BYTES = 4 * 1024 * 1024;
-      const MAX_TEXT_SIZE_BYTES = MAX_FILE_SIZE_BYTES;
-      const MAX_COMPRESSED_PREVIEW_BYTES = 2 * 1024 * 1024;
-      const MAX_SEGMENT_COUNT = 10000;
-      const qrWorkers = [];
-      const qrWorkerPending = new Map();
-      let qrWorkerReady = false;
-      let qrWorkerBootTried = false;
-      let qrWorkerReqId = 1;
+      }
+      const MAX_FILE_SIZE_MB = 20
+      const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
+      const FILE_VOLUME_BYTES = 4 * 1024 * 1024
+      const MAX_TEXT_SIZE_BYTES = MAX_FILE_SIZE_BYTES
+      const MAX_COMPRESSED_PREVIEW_BYTES = 2 * 1024 * 1024
+      const MAX_SEGMENT_COUNT = 10000
+      const qrWorkers = []
+      const qrWorkerPending = new Map()
+      let qrWorkerReady = false
+      let qrWorkerBootTried = false
+      let qrWorkerReqId = 1
+      let qrTransmissionCache = null
+      let qrEstimateToken = 0
 
       function getWorkerPoolSize() {
-        const hc =
-          typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
-            ? navigator.hardwareConcurrency
-            : 4;
-        return Math.max(2, Math.min(8, hc > 2 ? hc - 1 : hc));
+        const hc = typeof navigator !== 'undefined' && Number.isFinite(navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 4
+        return Math.max(2, Math.min(8, hc > 2 ? hc - 1 : hc))
       }
 
       function onWorkerMessage(workerState, event) {
-        const data = event && event.data ? event.data : {};
-        const pending = qrWorkerPending.get(data.id);
-        if (!pending) return;
-        qrWorkerPending.delete(data.id);
-        workerState.pendingCount = Math.max(0, workerState.pendingCount - 1);
+        const data = event && event.data ? event.data : {}
+        const pending = qrWorkerPending.get(data.id)
+        if (!pending) return
+        qrWorkerPending.delete(data.id)
+        workerState.pendingCount = Math.max(0, workerState.pendingCount - 1)
         if (data.ok) {
-          pending.resolve(data.result);
+          pending.resolve(data.result)
         } else {
-          pending.reject(new Error(data.error || "worker_error"));
+          pending.reject(new Error(data.error || 'worker_error'))
         }
       }
 
       function onWorkerError(workerState, error) {
-        workerState.alive = false;
-        workerState.pendingCount = 0;
-        qrWorkerReady = qrWorkers.some((item) => item.alive);
-        const failedIds = [];
+        workerState.alive = false
+        workerState.pendingCount = 0
+        qrWorkerReady = qrWorkers.some((item) => item.alive)
+        const failedIds = []
         qrWorkerPending.forEach((pending, id) => {
           if (pending.workerState === workerState) {
-            failedIds.push(id);
-            pending.reject(error instanceof Error ? error : new Error("worker_crashed"));
+            failedIds.push(id)
+            pending.reject(error instanceof Error ? error : new Error('worker_crashed'))
           }
-        });
-        failedIds.forEach((id) => qrWorkerPending.delete(id));
+        })
+        failedIds.forEach((id) => qrWorkerPending.delete(id))
       }
 
       function ensureQrWorker() {
-        if (qrWorkerReady && qrWorkers.length > 0) return true;
-        if (qrWorkers.length > 0 && !qrWorkerReady) {
-          qrWorkers.forEach((item) => {
-            try {
-              item.worker.terminate();
-            } catch (error) {
-              // ignore
-            }
-          });
-          qrWorkers.length = 0;
-        }
-        qrWorkerBootTried = true;
+        if (qrWorkerReady && qrWorkers.length > 0) return true
+        if (qrWorkerBootTried) return false
+        qrWorkerBootTried = true
+        let sourceUrl = ''
         try {
-          const size = getWorkerPoolSize();
+          // 本地文件不能直接启动外部 Worker，使用包含全部依赖的 Blob 脚本。
+          sourceUrl = location.protocol === 'file:' ? URL.createObjectURL(new Blob([qrWorkerSource], { type: 'text/javascript' })) : './js/qr-worker-v2.js'
+          const size = getWorkerPoolSize()
           for (let i = 0; i < size; i++) {
-            const worker = new Worker("./js/qr-worker-v2.js");
+            const worker = new Worker(sourceUrl)
             const workerState = {
               worker,
               alive: true,
               pendingCount: 0,
-            };
-            worker.onmessage = (event) => onWorkerMessage(workerState, event);
-            worker.onerror = (error) => onWorkerError(workerState, error);
-            qrWorkers.push(workerState);
+            }
+            worker.onmessage = (event) => onWorkerMessage(workerState, event)
+            worker.onerror = (error) => onWorkerError(workerState, error)
+            qrWorkers.push(workerState)
           }
-          qrWorkerReady = qrWorkers.length > 0;
-          return qrWorkerReady;
+          qrWorkerReady = qrWorkers.length > 0
+          return qrWorkerReady
         } catch (error) {
-          qrWorkers.length = 0;
-          qrWorkerReady = false;
-          return false;
+          qrWorkers.forEach((item) => item.worker.terminate())
+          qrWorkers.length = 0
+          qrWorkerReady = false
+          return false
+        } finally {
+          if (sourceUrl.startsWith('blob:')) URL.revokeObjectURL(sourceUrl)
         }
       }
 
       function pickWorker() {
-        let selected = null;
+        let selected = null
         for (const workerState of qrWorkers) {
-          if (!workerState.alive) continue;
+          if (!workerState.alive) continue
           if (!selected || workerState.pendingCount < selected.pendingCount) {
-            selected = workerState;
+            selected = workerState
           }
         }
-        return selected;
+        return selected
       }
 
       function workerCall(type, payload, transferables = []) {
         if (!(qrWorkerReady || ensureQrWorker())) {
-          return Promise.reject(new Error("worker_unavailable"));
+          return Promise.reject(new Error('worker_unavailable'))
         }
-        const workerState = pickWorker();
+        const workerState = pickWorker()
         if (!workerState) {
-          return Promise.reject(new Error("worker_unavailable"));
+          return Promise.reject(new Error('worker_unavailable'))
         }
-        const id = qrWorkerReqId++;
+        const id = qrWorkerReqId++
         return new Promise((resolve, reject) => {
-          qrWorkerPending.set(id, { resolve, reject, workerState });
-          workerState.pendingCount += 1;
-          workerState.worker.postMessage({ id, type, payload }, transferables);
-        });
+          qrWorkerPending.set(id, { resolve, reject, workerState })
+          workerState.pendingCount += 1
+          try {
+            workerState.worker.postMessage({ id, type, payload }, transferables)
+          } catch (error) {
+            qrWorkerPending.delete(id)
+            workerState.pendingCount -= 1
+            reject(error)
+          }
+        })
       }
 
       function getWorkerModeText() {
         if (!qrWorkerReady) {
-          ensureQrWorker();
+          ensureQrWorker()
         }
-        const alive = qrWorkers.filter((workerState) => workerState.alive).length;
-        return alive > 0 ? `Worker并发${alive}线程` : "单线程";
+        const alive = qrWorkers.filter((workerState) => workerState.alive).length
+        return alive > 0 ? `Worker并发${alive}线程` : '单线程'
       }
 
-      function setButtonLoading(buttonOrId, loading, loadingText = "") {
-        const button = typeof buttonOrId === "string" ? document.getElementById(buttonOrId) : buttonOrId;
-        if (!button) return;
+      function setButtonLoading(buttonOrId, loading, loadingText = '') {
+        const button = typeof buttonOrId === 'string' ? document.getElementById(buttonOrId) : buttonOrId
+        if (!button) return
         if (loading) {
-          if (button.dataset.loading === "1") return;
-          button.dataset.loading = "1";
-          button.dataset.originalText = button.textContent || "";
-          button.dataset.wasDisabled = button.disabled ? "1" : "0";
-          if (loadingText) button.textContent = loadingText;
-          button.disabled = true;
-          button.classList.add("loading");
-          return;
+          if (button.dataset.loading === '1') return
+          button.dataset.loading = '1'
+          button.dataset.originalText = button.textContent || ''
+          button.dataset.wasDisabled = button.disabled ? '1' : '0'
+          if (loadingText) button.textContent = loadingText
+          button.disabled = true
+          button.classList.add('loading')
+          return
         }
-        if (button.dataset.loading === "1") {
-          button.textContent = button.dataset.originalText || button.textContent;
-          const wasDisabled = button.dataset.wasDisabled === "1";
-          button.disabled = wasDisabled;
-          button.dataset.loading = "0";
-          button.classList.remove("loading");
+        if (button.dataset.loading === '1') {
+          button.textContent = button.dataset.originalText || button.textContent
+          const wasDisabled = button.dataset.wasDisabled === '1'
+          button.disabled = wasDisabled
+          button.dataset.loading = '0'
+          button.classList.remove('loading')
         }
       }
 
       function switchTab(tabId) {
-        document.querySelectorAll(".tab").forEach((tab) => {
-          tab.classList.toggle("active", tab.dataset.tab === tabId);
-        });
-        document.querySelectorAll(".panel").forEach((panel) => {
-          panel.classList.toggle("active", panel.id === tabId);
-        });
+        document.querySelectorAll('.tab').forEach((tab) => {
+          tab.classList.toggle('active', tab.dataset.tab === tabId)
+        })
+        document.querySelectorAll('.panel').forEach((panel) => {
+          panel.classList.toggle('active', panel.id === tabId)
+        })
       }
 
       function reorderActionButtons() {
-        const showBtn = document.getElementById("showQrBtn");
-        const batchBtn = document.getElementById("batchDownloadBtn");
-        const compressedBtn = document.getElementById("showCompressedBtn");
+        const showBtn = document.getElementById('showQrBtn')
+        const batchBtn = document.getElementById('batchDownloadBtn')
+        const compressedBtn = document.getElementById('showCompressedBtn')
         if (showBtn && batchBtn && compressedBtn && showBtn.parentElement) {
-          const bar = showBtn.parentElement;
-          bar.appendChild(compressedBtn);
-          bar.appendChild(showBtn);
-          bar.appendChild(batchBtn);
+          const bar = showBtn.parentElement
+          bar.appendChild(compressedBtn)
+          bar.appendChild(showBtn)
+          bar.appendChild(batchBtn)
         }
       }
 
       function setBatchDownloadEnabled(enabled) {
-        document.getElementById("batchDownloadBtn").disabled = !enabled;
+        document.getElementById('batchDownloadBtn').disabled = !enabled
       }
 
       function setShowQrEnabled(enabled) {
-        document.getElementById("showQrBtn").disabled = !enabled;
+        document.getElementById('showQrBtn').disabled = !enabled
       }
 
       function setShowCompressedEnabled(enabled) {
-        document.getElementById("showCompressedBtn").disabled = !enabled;
+        document.getElementById('showCompressedBtn').disabled = !enabled
       }
 
       function setDecodedDownloadEnabled(enabled) {
-        document.getElementById("downloadDecodedBtn").disabled = !enabled;
+        document.getElementById('downloadDecodedBtn').disabled = !enabled
       }
 
       function setDecodeError(message) {
-        const error = document.getElementById("decodeError");
-        error.textContent = message;
-        error.classList.remove("hidden");
+        const error = document.getElementById('decodeError')
+        error.textContent = message
+        error.classList.remove('hidden')
       }
 
       function clearDecodeError() {
-        const error = document.getElementById("decodeError");
-        error.textContent = "";
-        error.classList.add("hidden");
+        const error = document.getElementById('decodeError')
+        error.textContent = ''
+        error.classList.add('hidden')
       }
 
       function setDecodeResult(text, canDownload, meta = null) {
-        state.decodedPayload = text;
-        state.decodedCanDownload = Boolean(canDownload);
-        state.decodedFile = meta && meta.decodedFile ? meta.decodedFile : null;
+        state.decodedPayload = text
+        state.decodedCanDownload = Boolean(canDownload)
+        state.decodedFile = meta && meta.decodedFile ? meta.decodedFile : null
 
-        let displayText = text || "\u89e3\u7801\u5931\u8d25";
+        let displayText = text || '\u89e3\u7801\u5931\u8d25'
         if (meta && meta.segmentInfo) {
-          const info = meta.segmentInfo;
+          const info = meta.segmentInfo
           if (canDownload) {
-            displayText = `\u89e3\u7801\u6210\u529f (${info.totalSegments}/${info.totalSegments})`;
+            displayText = `\u89e3\u7801\u6210\u529f (${info.totalSegments}/${info.totalSegments})`
           } else {
-            displayText = `\u89e3\u7801\u6210\u529f (${info.currentSegment}/${info.totalSegments})`;
+            displayText = `\u89e3\u7801\u6210\u529f (${info.currentSegment}/${info.totalSegments})`
           }
         } else if (canDownload) {
-          displayText = "\u89e3\u7801\u6210\u529f\uff0c\u70b9\u51fb\u201c\u89e3\u7801\u7ed3\u679c\u201d\u67e5\u770b\u3002";
+          displayText = '\u89e3\u7801\u6210\u529f\uff0c\u70b9\u51fb\u201c\u89e3\u7801\u7ed3\u679c\u201d\u67e5\u770b\u3002'
         } else if (!text && Array.isArray(state.segmentsData)) {
-          displayText = "\u89e3\u7801\u8fdb\u884c\u4e2d";
+          displayText = '\u89e3\u7801\u8fdb\u884c\u4e2d'
         }
 
-        document.getElementById("decodeResult").textContent = displayText;
-        setDecodedDownloadEnabled(canDownload);
+        document.getElementById('decodeResult').textContent = displayText
+        setDecodedDownloadEnabled(canDownload)
       }
 
       function setQRStatus(text) {
-        document.getElementById("qrStatusText").textContent = text;
+        document.getElementById('qrStatusText').textContent = text
       }
 
       function formatFileSize(bytes) {
-        if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
-        const units = ["B", "KB", "MB", "GB"];
-        let size = bytes;
-        let idx = 0;
+        if (!Number.isFinite(bytes) || bytes < 0) return '0 B'
+        const units = ['B', 'KB', 'MB', 'GB']
+        let size = bytes
+        let idx = 0
         while (size >= 1024 && idx < units.length - 1) {
-          size /= 1024;
-          idx += 1;
+          size /= 1024
+          idx += 1
         }
-        return `${size.toFixed(idx === 0 ? 0 : 2)} ${units[idx]}`;
+        return `${size.toFixed(idx === 0 ? 0 : 2)} ${units[idx]}`
       }
 
       function bytesToBase64Url(bytes) {
-        let binary = "";
+        let binary = ''
         for (let i = 0; i < bytes.length; i++) {
-          binary += String.fromCharCode(bytes[i]);
+          binary += String.fromCharCode(bytes[i])
         }
-        return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
       }
 
       function base64UrlToBytes(base64url) {
-        const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
-        const pad = "=".repeat((4 - (base64.length % 4)) % 4);
-        const binary = atob(base64 + pad);
-        const bytes = new Uint8Array(binary.length);
+        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/')
+        const pad = '='.repeat((4 - (base64.length % 4)) % 4)
+        const binary = atob(base64 + pad)
+        const bytes = new Uint8Array(binary.length)
         for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
+          bytes[i] = binary.charCodeAt(i)
         }
-        return bytes;
+        return bytes
       }
 
       function parseMetaBase64Url(metaText) {
-        const bytes = base64UrlToBytes(metaText);
-        return JSON.parse(new TextDecoder().decode(bytes));
+        const bytes = base64UrlToBytes(metaText)
+        return JSON.parse(new TextDecoder().decode(bytes))
       }
 
       function concatUint8Arrays(parts) {
-        const total = parts.reduce((sum, part) => sum + part.length, 0);
-        const out = new Uint8Array(total);
-        let offset = 0;
+        const total = parts.reduce((sum, part) => sum + part.length, 0)
+        const out = new Uint8Array(total)
+        let offset = 0
         for (const part of parts) {
-          out.set(part, offset);
-          offset += part.length;
+          out.set(part, offset)
+          offset += part.length
         }
-        return out;
+        return out
       }
 
       function rebuildPayloadBytes(metaObj, payloadBytes) {
         if (metaObj.multipart && Array.isArray(metaObj.volumes) && metaObj.volumes.length) {
-          const restoredParts = [];
-          let offset = 0;
+          const restoredParts = []
+          let offset = 0
           for (const volume of metaObj.volumes) {
-            const size = Number(volume.processedSize) || 0;
+            const size = Number(volume.processedSize) || 0
             if (size <= 0 || offset + size > payloadBytes.length) {
-              throw new Error("分卷数据损坏或不完整");
+              throw new Error('分卷数据损坏或不完整')
             }
-            const segment = payloadBytes.slice(offset, offset + size);
-            offset += size;
-            restoredParts.push(volume.compression === "deflate" ? pako.inflate(segment) : segment);
+            const segment = payloadBytes.slice(offset, offset + size)
+            offset += size
+            restoredParts.push(volume.compression === 'deflate' ? pako.inflate(segment) : segment)
           }
-          return concatUint8Arrays(restoredParts);
+          return concatUint8Arrays(restoredParts)
         }
-        return metaObj.compression === "deflate" ? pako.inflate(payloadBytes) : payloadBytes;
+        return metaObj.compression === 'deflate' ? pako.inflate(payloadBytes) : payloadBytes
       }
 
       function isAlreadyCompressedFile(meta) {
-        if (!meta) return false;
-        const name = String(meta.name || "").toLowerCase();
-        const mime = String(meta.type || "").toLowerCase();
-        const compressedExt =
-          /\.(jpg|jpeg|png|gif|webp|avif|heic|mp4|mp3|zip|rar|7z|gz|pdf|docx|xlsx|pptx)$/i;
-        const compressedMime =
-          /^(image\/(jpeg|png|gif|webp|avif|heic)|video\/|audio\/|application\/(zip|pdf|gzip))/;
-        return compressedExt.test(name) || compressedMime.test(mime);
+        if (!meta) return false
+        const name = String(meta.name || '').toLowerCase()
+        const mime = String(meta.type || '').toLowerCase()
+        const compressedExt = /\.(jpg|jpeg|png|gif|webp|avif|heic|mp4|mp3|zip|rar|7z|gz|pdf|docx|xlsx|pptx)$/i
+        const compressedMime = /^(image\/(jpeg|png|gif|webp|avif|heic)|video\/|audio\/|application\/(zip|pdf|gzip))/
+        return compressedExt.test(name) || compressedMime.test(mime)
       }
 
       function shouldCompressFile(meta, bytes) {
-        const mime = (meta.type || "").toLowerCase();
-        const name = (meta.name || "").toLowerCase();
-        const textType = mime.startsWith("text/") || /application\/(json|xml|javascript)/.test(mime);
-        const textExt = /\.(txt|json|csv|xml|md|html|css|js|ts)$/i.test(name);
-        if (isAlreadyCompressedFile(meta)) return false;
-        if (textType || textExt) return true;
-        return bytes.length > 512 * 1024;
+        const mime = (meta.type || '').toLowerCase()
+        const name = (meta.name || '').toLowerCase()
+        const textType = mime.startsWith('text/') || /application\/(json|xml|javascript)/.test(mime)
+        const textExt = /\.(txt|json|csv|xml|md|html|css|js|ts)$/i.test(name)
+        if (isAlreadyCompressedFile(meta)) return false
+        if (textType || textExt) return true
+        return bytes.length > 512 * 1024
       }
 
       function updateCompressionChips() {
-        const autoBtn = document.getElementById("compressAutoBtn");
-        const forceBtn = document.getElementById("compressForceBtn");
-        if (!autoBtn || !forceBtn) return;
+        const autoBtn = document.getElementById('compressAutoBtn')
+        const forceBtn = document.getElementById('compressForceBtn')
+        if (!autoBtn || !forceBtn) return
 
-        autoBtn.textContent = "自动判断";
-        forceBtn.disabled = false;
-        autoBtn.classList.toggle("active", !state.forceCompress);
-        forceBtn.classList.toggle("active", state.forceCompress);
+        autoBtn.textContent = '自动判断'
+        forceBtn.disabled = false
+        autoBtn.classList.toggle('active', !state.forceCompress)
+        forceBtn.classList.toggle('active', state.forceCompress)
       }
 
       function setCompressionMode(mode) {
-        state.forceCompress = mode === "force";
-        updateCompressionChips();
-        estimateCurrentPayloadStats();
+        state.forceCompress = mode === 'force'
+        updateCompressionChips()
+        estimateCurrentPayloadStats()
       }
 
       function syncCompressionControls() {
-        updateCompressionChips();
+        updateCompressionChips()
       }
 
       function getChunkSizeByEcc(errorLevel) {
@@ -1661,60 +1649,59 @@
           M: 2200,
           Q: 1550,
           H: 1150,
-        };
-        return map[errorLevel] || 1550;
+        }
+        return map[errorLevel] || 1550
       }
 
-      function buildTransmissionPayload(inputMode, payload) {
-        let sourceBytes;
-        let meta;
-        const forceCompress = Boolean(state.forceCompress);
-        let alreadyCompressed = false;
-        let strategyTag = "none";
+      function buildTransmissionPayload(inputMode, payload, fileMeta = state.fileMeta, forceCompress = Boolean(state.forceCompress)) {
+        let sourceBytes
+        let meta
+        let alreadyCompressed = false
+        let strategyTag = 'none'
 
-        if (inputMode === "file") {
-          const fileBytes = payload;
-          const fileMeta = state.fileMeta || {
-            name: "file.bin",
-            type: "application/octet-stream",
+        if (inputMode === 'file') {
+          const fileBytes = payload
+          fileMeta = fileMeta || {
+            name: 'file.bin',
+            type: 'application/octet-stream',
             size: fileBytes.length,
-          };
-          alreadyCompressed = isAlreadyCompressedFile(fileMeta);
-          const shouldCompress = shouldCompressFile(fileMeta, fileBytes);
-          const enableMultipart = fileBytes.length > MAX_FILE_SIZE_BYTES;
+          }
+          alreadyCompressed = isAlreadyCompressedFile(fileMeta)
+          const shouldCompress = shouldCompressFile(fileMeta, fileBytes)
+          const enableMultipart = fileBytes.length > MAX_FILE_SIZE_BYTES
 
           if (enableMultipart) {
-            const volumeParts = [];
-            const volumeMeta = [];
-            let offset = 0;
-            let hasCompressedVolume = false;
+            const volumeParts = []
+            const volumeMeta = []
+            let offset = 0
+            let hasCompressedVolume = false
 
             for (let start = 0; start < fileBytes.length; start += FILE_VOLUME_BYTES) {
-              const end = Math.min(start + FILE_VOLUME_BYTES, fileBytes.length);
-              const rawPart = fileBytes.slice(start, end);
-              const deflated = pako.deflate(rawPart, { level: 9 });
-              const useCompressed = forceCompress || deflated.length + 16 < rawPart.length;
-              const partBytes = useCompressed ? deflated : rawPart;
-              const partCompression = useCompressed ? "deflate" : "none";
-              hasCompressedVolume = hasCompressedVolume || useCompressed;
-              volumeParts.push(partBytes);
+              const end = Math.min(start + FILE_VOLUME_BYTES, fileBytes.length)
+              const rawPart = fileBytes.slice(start, end)
+              const deflated = pako.deflate(rawPart, { level: 9 })
+              const useCompressed = forceCompress || deflated.length + 16 < rawPart.length
+              const partBytes = useCompressed ? deflated : rawPart
+              const partCompression = useCompressed ? 'deflate' : 'none'
+              hasCompressedVolume = hasCompressedVolume || useCompressed
+              volumeParts.push(partBytes)
               volumeMeta.push({
                 index: volumeMeta.length + 1,
                 originalSize: rawPart.length,
                 processedSize: partBytes.length,
                 compression: partCompression,
                 offset,
-              });
-              offset += partBytes.length;
+              })
+              offset += partBytes.length
             }
 
-            sourceBytes = concatUint8Arrays(volumeParts);
+            sourceBytes = concatUint8Arrays(volumeParts)
             meta = {
-              kind: "file",
-              name: fileMeta.name || "file.bin",
-              type: fileMeta.type || "application/octet-stream",
+              kind: 'file',
+              name: fileMeta.name || 'file.bin',
+              type: fileMeta.type || 'application/octet-stream',
               size: Number.isFinite(fileMeta.size) ? fileMeta.size : fileBytes.length,
-              compression: hasCompressedVolume ? "deflate" : "none",
+              compression: hasCompressedVolume ? 'deflate' : 'none',
               forceCompress,
               alreadyCompressed,
               originalSize: fileBytes.length,
@@ -1722,842 +1709,891 @@
               volumeSize: FILE_VOLUME_BYTES,
               volumeCount: volumeMeta.length,
               volumes: volumeMeta,
-            };
-            strategyTag = forceCompress ? "force" : hasCompressedVolume ? "auto" : "none";
+            }
+            strategyTag = forceCompress ? 'force' : hasCompressedVolume ? 'auto' : 'none'
           } else {
-            let finalBytes = fileBytes;
-            let compression = "none";
+            let finalBytes = fileBytes
+            let compression = 'none'
             if (forceCompress || shouldCompress) {
-              const deflated = pako.deflate(fileBytes, { level: 9 });
+              const deflated = pako.deflate(fileBytes, { level: 9 })
               if (forceCompress) {
-                finalBytes = deflated;
-                compression = "deflate";
+                finalBytes = deflated
+                compression = 'deflate'
               } else if (deflated.length + 16 < fileBytes.length) {
-                finalBytes = deflated;
-                compression = "deflate";
+                finalBytes = deflated
+                compression = 'deflate'
               }
             }
-            sourceBytes = finalBytes;
+            sourceBytes = finalBytes
             meta = {
-              kind: "file",
-              name: fileMeta.name || "file.bin",
-              type: fileMeta.type || "application/octet-stream",
+              kind: 'file',
+              name: fileMeta.name || 'file.bin',
+              type: fileMeta.type || 'application/octet-stream',
               size: Number.isFinite(fileMeta.size) ? fileMeta.size : fileBytes.length,
               compression,
               forceCompress,
               alreadyCompressed,
               originalSize: fileBytes.length,
               multipart: false,
-            };
-            strategyTag = forceCompress ? "force" : compression === "deflate" ? "auto" : "none";
+            }
+            strategyTag = forceCompress ? 'force' : compression === 'deflate' ? 'auto' : 'none'
           }
         } else {
-          const text = payload;
-          const textBytes = new TextEncoder().encode(text);
-          let finalBytes = textBytes;
-          let compression = "none";
+          const text = payload
+          const textBytes = new TextEncoder().encode(text)
+          let finalBytes = textBytes
+          let compression = 'none'
           if (forceCompress || textBytes.length > 256) {
-            const deflated = pako.deflate(textBytes, { level: 9 });
+            const deflated = pako.deflate(textBytes, { level: 9 })
             if (forceCompress) {
-              finalBytes = deflated;
-              compression = "deflate";
+              finalBytes = deflated
+              compression = 'deflate'
             } else if (deflated.length + 8 < textBytes.length) {
-              finalBytes = deflated;
-              compression = "deflate";
+              finalBytes = deflated
+              compression = 'deflate'
             }
           }
-          sourceBytes = finalBytes;
+          sourceBytes = finalBytes
           meta = {
-            kind: "text",
+            kind: 'text',
             compression,
             forceCompress,
             alreadyCompressed: false,
             originalSize: textBytes.length,
-            charset: "utf-8",
+            charset: 'utf-8',
             multipart: false,
-          };
-          strategyTag = forceCompress ? "force" : compression === "deflate" ? "auto" : "none";
+          }
+          strategyTag = forceCompress ? 'force' : compression === 'deflate' ? 'auto' : 'none'
         }
 
-        const metaBytes = new TextEncoder().encode(JSON.stringify(meta));
-        let combinedSummary = "";
+        const metaBytes = new TextEncoder().encode(JSON.stringify(meta))
+        let combinedSummary = ''
         if (sourceBytes.length <= MAX_COMPRESSED_PREVIEW_BYTES) {
-          const metaBase64Url = bytesToBase64Url(metaBytes);
-          const payloadBase64Url = bytesToBase64Url(sourceBytes);
-          combinedSummary = `v5t|${metaBase64Url}|${payloadBase64Url}`;
+          const metaBase64Url = bytesToBase64Url(metaBytes)
+          const payloadBase64Url = bytesToBase64Url(sourceBytes)
+          combinedSummary = `v5t|${metaBase64Url}|${payloadBase64Url}`
         }
         return {
           meta,
           metaBytes,
           payloadBytes: sourceBytes,
           combined: combinedSummary,
-          rawLength: inputMode === "file" ? payload.length : new TextEncoder().encode(payload).length,
+          rawLength: inputMode === 'file' ? payload.length : new TextEncoder().encode(payload).length,
           processedLength: sourceBytes.length,
           encodedLength: sourceBytes.length,
           strategy: strategyTag,
           forceCompress: meta.forceCompress,
           alreadyCompressed: meta.alreadyCompressed,
-        };
+        }
       }
 
       function bytesToBinaryString(bytes) {
-        let out = "";
-        const step = 0x8000;
+        let out = ''
+        const step = 0x8000
         for (let i = 0; i < bytes.length; i += step) {
-          const chunk = bytes.subarray(i, Math.min(i + step, bytes.length));
-          out += String.fromCharCode.apply(null, Array.from(chunk));
+          const chunk = bytes.subarray(i, Math.min(i + step, bytes.length))
+          out += String.fromCharCode.apply(null, Array.from(chunk))
         }
-        return out;
+        return out
       }
 
       function binaryStringToBytes(text) {
-        const bytes = new Uint8Array(text.length);
+        const bytes = new Uint8Array(text.length)
         for (let i = 0; i < text.length; i++) {
-          bytes[i] = text.charCodeAt(i) & 0xff;
+          bytes[i] = text.charCodeAt(i) & 0xff
         }
-        return bytes;
+        return bytes
       }
 
       function encodeVarInt(value) {
-        const bytes = [];
-        let v = value >>> 0;
+        const bytes = []
+        let v = value >>> 0
         while (v >= 0x80) {
-          bytes.push((v & 0x7f) | 0x80);
-          v >>>= 7;
+          bytes.push((v & 0x7f) | 0x80)
+          v >>>= 7
         }
-        bytes.push(v & 0x7f);
-        return bytes;
+        bytes.push(v & 0x7f)
+        return bytes
       }
 
       function decodeVarInt(bytes, startOffset) {
-        let value = 0;
-        let shift = 0;
-        let offset = startOffset;
+        let value = 0
+        let shift = 0
+        let offset = startOffset
         while (offset < bytes.length) {
-          const b = bytes[offset++];
-          value |= (b & 0x7f) << shift;
+          const b = bytes[offset++]
+          value |= (b & 0x7f) << shift
           if ((b & 0x80) === 0) {
-            return { value, offset };
+            return { value, offset }
           }
-          shift += 7;
-          if (shift > 28) break;
+          shift += 7
+          if (shift > 28) break
         }
-        throw new Error("\u5206\u7247\u5934 varint \u65e0\u6548");
+        throw new Error('\u5206\u7247\u5934 varint \u65e0\u6548')
       }
 
       function createV5Frame(current, total, flags, payloadBytes) {
-        const header = [0x46, 0x54, 0x05, flags, ...encodeVarInt(current), ...encodeVarInt(total)];
-        const out = new Uint8Array(header.length + payloadBytes.length);
-        out.set(header, 0);
-        out.set(payloadBytes, header.length);
-        return out;
+        const header = [0x46, 0x54, 0x05, flags, ...encodeVarInt(current), ...encodeVarInt(total)]
+        const out = new Uint8Array(header.length + payloadBytes.length)
+        out.set(header, 0)
+        out.set(payloadBytes, header.length)
+        return out
       }
 
       function parseV5Frame(frameBytes) {
         if (frameBytes.length < 6 || frameBytes[0] !== 0x46 || frameBytes[1] !== 0x54 || frameBytes[2] !== 0x05) {
-          return null;
+          return null
         }
-        let offset = 3;
-        const flags = frameBytes[offset++];
-        const currentInfo = decodeVarInt(frameBytes, offset);
-        const totalInfo = decodeVarInt(frameBytes, currentInfo.offset);
-        const current = currentInfo.value;
-        const total = totalInfo.value;
+        let offset = 3
+        const flags = frameBytes[offset++]
+        const currentInfo = decodeVarInt(frameBytes, offset)
+        const totalInfo = decodeVarInt(frameBytes, currentInfo.offset)
+        const current = currentInfo.value
+        const total = totalInfo.value
         if (current < 1 || total < 1 || current > total) {
-          throw new Error("分片序号无效");
+          throw new Error('分片序号无效')
         }
         return {
           flags,
           current,
           total,
           payload: frameBytes.slice(totalInfo.offset),
-        };
+        }
       }
 
       function splitV5BinarySegments(metaBytes, payloadBytes, chunkSize) {
-        const dataCount = Math.max(1, Math.ceil(payloadBytes.length / chunkSize));
-        const total = dataCount + 1;
-        const frames = [];
-        frames.push(createV5Frame(1, total, 1, metaBytes));
+        const dataCount = Math.max(1, Math.ceil(payloadBytes.length / chunkSize))
+        const total = dataCount + 1
+        const frames = []
+        frames.push(createV5Frame(1, total, 1, metaBytes))
         for (let i = 0; i < dataCount; i++) {
-          const start = i * chunkSize;
-          const end = Math.min(start + chunkSize, payloadBytes.length);
-          const chunk = payloadBytes.slice(start, end);
-          frames.push(createV5Frame(i + 2, total, 2, chunk));
+          const start = i * chunkSize
+          const end = Math.min(start + chunkSize, payloadBytes.length)
+          const chunk = payloadBytes.slice(start, end)
+          frames.push(createV5Frame(i + 2, total, 2, chunk))
         }
-        return frames;
+        return frames
       }
 
       function cancelQRGeneration(silent = false) {
-        state.generationToken += 1;
-        state.isGenerating = false;
+        state.generationToken += 1
+        state.isGenerating = false
+        setButtonLoading('generateBtn', false)
         if (!silent) {
-          setQRStatus("\u5df2\u53d6\u6d88\u4e8c\u7ef4\u7801\u751f\u6210\u3002");
+          setQRStatus('\u5df2\u53d6\u6d88\u4e8c\u7ef4\u7801\u751f\u6210\u3002')
         }
       }
 
       function openModal(title, bodyNode, options = {}) {
-        const modal = document.getElementById("modal");
-        const modalTitle = document.getElementById("modalTitle");
-        const modalBody = document.getElementById("modalBody");
-        const fullscreenBtn = document.getElementById("modalFullscreenBtn");
-        modalTitle.textContent = title;
-        modalBody.innerHTML = "";
-        modalBody.className = "modal-body";
-        modal.classList.remove("fullscreen", "qr-gallery-modal");
+        const modal = document.getElementById('modal')
+        const modalTitle = document.getElementById('modalTitle')
+        const modalBody = document.getElementById('modalBody')
+        const fullscreenBtn = document.getElementById('modalFullscreenBtn')
+        modalTitle.textContent = title
+        modalBody.innerHTML = ''
+        modalBody.className = 'modal-body'
+        modal.classList.remove('fullscreen', 'qr-gallery-modal')
         if (options.gallery) {
-          modal.classList.add("qr-gallery-modal");
+          modal.classList.add('qr-gallery-modal')
         }
-        fullscreenBtn.textContent = "\u5168\u5c4f";
-        modalBody.appendChild(bodyNode);
-        modal.classList.add("open");
-        modal.setAttribute("aria-hidden", "false");
+        fullscreenBtn.textContent = '\u5168\u5c4f'
+        modalBody.appendChild(bodyNode)
+        modal.classList.add('open')
+        modal.setAttribute('aria-hidden', 'false')
       }
 
       function closeModal() {
-        const modal = document.getElementById("modal");
-        modal.classList.remove("open");
-        modal.classList.remove("fullscreen", "qr-gallery-modal");
-        modal.setAttribute("aria-hidden", "true");
+        const modal = document.getElementById('modal')
+        modal.classList.remove('open')
+        modal.classList.remove('fullscreen', 'qr-gallery-modal')
+        modal.setAttribute('aria-hidden', 'true')
       }
 
       function toggleModalFullscreen() {
-        const modal = document.getElementById("modal");
-        const fullscreenBtn = document.getElementById("modalFullscreenBtn");
-        const isFullscreen = modal.classList.toggle("fullscreen");
-        fullscreenBtn.textContent = isFullscreen ? "\u9000\u51fa\u5168\u5c4f" : "\u5168\u5c4f";
+        const modal = document.getElementById('modal')
+        const fullscreenBtn = document.getElementById('modalFullscreenBtn')
+        const isFullscreen = modal.classList.toggle('fullscreen')
+        fullscreenBtn.textContent = isFullscreen ? '\u9000\u51fa\u5168\u5c4f' : '\u5168\u5c4f'
       }
 
       function openQRFilePicker() {
-        document.getElementById("qrFileInput").click();
+        document.getElementById('qrFileInput').click()
       }
 
       function switchQRInputMode(mode) {
-        state.inputMode = mode;
-        document.getElementById("qrFileMode").classList.toggle("hidden", mode !== "file");
-        document.getElementById("qrTextMode").classList.toggle("hidden", mode !== "text");
+        state.inputMode = mode
+        document.getElementById('qrFileMode').classList.toggle('hidden', mode !== 'file')
+        document.getElementById('qrTextMode').classList.toggle('hidden', mode !== 'text')
 
-        if (mode === "text") {
-          const textarea = document.getElementById("qrTextInput");
-          textarea.value = state.textDraft || "";
-          textarea.focus();
+        if (mode === 'text') {
+          const textarea = document.getElementById('qrTextInput')
+          textarea.value = state.textDraft || ''
+          textarea.focus()
         }
-        syncCompressionControls();
-        estimateCurrentPayloadStats();
+        syncCompressionControls()
+        estimateCurrentPayloadStats()
       }
 
       function setOptionChip(group, value) {
-        if (group === "size") {
-          state.qrSize = value;
-        } else if (group === "ecc") {
-          state.qrEcc = value;
+        if (group === 'size') {
+          state.qrSize = value
+        } else if (group === 'ecc') {
+          state.qrEcc = value
         }
 
         document.querySelectorAll(`.option-chips[data-group="${group}"] .option-chip`).forEach((button) => {
-          button.classList.toggle("active", button.dataset.value === value);
-        });
-        estimateCurrentPayloadStats();
+          button.classList.toggle('active', button.dataset.value === value)
+        })
+        estimateCurrentPayloadStats()
       }
 
       function copyText(text) {
-        if (!text) return Promise.reject(new Error("\u7a7a\u5185\u5bb9"));
+        if (!text) return Promise.reject(new Error('\u7a7a\u5185\u5bb9'))
         if (navigator.clipboard && window.isSecureContext) {
-          return navigator.clipboard.writeText(text);
+          return navigator.clipboard.writeText(text)
         }
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.style.position = "fixed";
-        textarea.style.left = "-9999px";
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-        return Promise.resolve();
+        const textarea = document.createElement('textarea')
+        textarea.value = text
+        textarea.style.position = 'fixed'
+        textarea.style.left = '-9999px'
+        document.body.appendChild(textarea)
+        textarea.focus()
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+        return Promise.resolve()
       }
 
       function clearQRGenerator() {
-        cancelQRGeneration(true);
-        state.fileBytes = null;
-        state.fileMeta = null;
-        state.textDraft = "";
-        state.compressed = "";
-        state.qrImages = [];
-        document.getElementById("qrFileInput").value = "";
-        document.getElementById("qrTextInput").value = "";
-        const preview = document.getElementById("qrFilePreview");
-        preview.textContent = "";
-        preview.classList.add("hidden");
-        setQRStatus("\u7b49\u5f85\u751f\u6210\u4e8c\u7ef4\u7801\u3002");
-        updateQRStats(0, 0, 0);
-        setBatchDownloadEnabled(false);
-        setShowQrEnabled(false);
-        setShowCompressedEnabled(false);
-        switchQRInputMode("file");
-        syncCompressionControls();
+        cancelQRGeneration(true)
+        qrEstimateToken += 1
+        qrTransmissionCache = null
+        state.fileBytes = null
+        state.fileMeta = null
+        state.textDraft = ''
+        state.compressed = ''
+        state.qrImages = []
+        document.getElementById('qrFileInput').value = ''
+        document.getElementById('qrTextInput').value = ''
+        const preview = document.getElementById('qrFilePreview')
+        preview.textContent = ''
+        preview.classList.add('hidden')
+        setQRStatus('\u7b49\u5f85\u751f\u6210\u4e8c\u7ef4\u7801\u3002')
+        updateQRStats(0, 0, 0)
+        setBatchDownloadEnabled(false)
+        setShowQrEnabled(false)
+        setShowCompressedEnabled(false)
+        switchQRInputMode('file')
+        syncCompressionControls()
       }
 
       function resetDecodeState() {
-        state.decodeToken += 1;
-        state.isDecoding = false;
-        state.segmentsData = null;
-        state.expectedTotal = 0;
-        state.segmentMeta = null;
-        state.decodedPayload = "";
-        state.decodedCanDownload = false;
-        state.decodedFile = null;
-        document.getElementById("decodeText").value = "";
-        document.getElementById("decodeResult").textContent = "\u7b49\u5f85\u8f93\u5165\u3002";
-        clearDecodeDropList();
-        setDecodedDownloadEnabled(false);
-        clearDecodeError();
+        state.decodeToken += 1
+        state.isDecoding = false
+        state.segmentsData = null
+        state.expectedTotal = 0
+        state.segmentMeta = null
+        state.decodedPayload = ''
+        state.decodedCanDownload = false
+        state.decodedFile = null
+        document.getElementById('decodeText').value = ''
+        document.getElementById('decodeResult').textContent = '\u7b49\u5f85\u8f93\u5165\u3002'
+        clearDecodeDropList()
+        setDecodedDownloadEnabled(false)
+        clearDecodeError()
       }
 
       function clearDecodeDropList() {
-        const dropZoneEl = document.getElementById("dropZone");
-        const list = document.getElementById("decodeDropList");
-        list.innerHTML = "";
-        list.classList.add("hidden");
-        dropZoneEl.classList.remove("has-items");
+        const dropZoneEl = document.getElementById('dropZone')
+        const list = document.getElementById('decodeDropList')
+        list.innerHTML = ''
+        list.classList.add('hidden')
+        dropZoneEl.classList.remove('has-items')
       }
 
       function readFileAsDataURL(file) {
         return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (event) => resolve(event.target.result);
-          reader.onerror = () => reject(new Error("文件读取失败"));
-          reader.readAsDataURL(file);
-        });
+          const reader = new FileReader()
+          reader.onload = (event) => resolve(event.target.result)
+          reader.onerror = () => reject(new Error('文件读取失败'))
+          reader.readAsDataURL(file)
+        })
       }
 
       function handleQRFile(file) {
-        if (!file) return;
-        const preview = document.getElementById("qrFilePreview");
+        if (!file) return
+        const preview = document.getElementById('qrFilePreview')
         if (state.isGenerating) {
-          setQRStatus("\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801\uff0c\u8bf7\u5148\u6e05\u7a7a\u6216\u7b49\u5f85\u5b8c\u6210\u3002");
-          return;
+          setQRStatus('\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801\uff0c\u8bf7\u5148\u6e05\u7a7a\u6216\u7b49\u5f85\u5b8c\u6210\u3002')
+          return
         }
         if (file.size > MAX_FILE_SIZE_BYTES) {
-          state.fileBytes = null;
-          state.fileMeta = null;
-          preview.textContent = `\u6587\u4ef6\u8fc7\u5927\uff08${formatFileSize(file.size)}\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB\u3002`;
-          preview.classList.remove("hidden");
-          setQRStatus(`\u6587\u4ef6\u8d85\u8fc7 ${MAX_FILE_SIZE_MB}MB\uff0c\u5df2\u963b\u6b62\u751f\u6210\u3002`);
-          updateQRStats(0, 0, 0);
-          return;
+          qrEstimateToken += 1
+          qrTransmissionCache = null
+          state.fileBytes = null
+          state.fileMeta = null
+          preview.textContent = `\u6587\u4ef6\u8fc7\u5927\uff08${formatFileSize(file.size)}\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB\u3002`
+          preview.classList.remove('hidden')
+          setQRStatus(`\u6587\u4ef6\u8d85\u8fc7 ${MAX_FILE_SIZE_MB}MB\uff0c\u5df2\u963b\u6b62\u751f\u6210\u3002`)
+          updateQRStats(0, 0, 0)
+          return
         }
-        const reader = new FileReader();
+        const reader = new FileReader()
         reader.onload = function () {
-          const bytes = new Uint8Array(reader.result);
-          state.fileBytes = bytes;
+          const bytes = new Uint8Array(reader.result)
+          state.fileBytes = bytes
           state.fileMeta = {
             name: file.name,
-            type: file.type || "application/octet-stream",
+            type: file.type || 'application/octet-stream',
             size: file.size,
-          };
-          preview.textContent =
-            `\u6587\u4ef6\uff1a${file.name}\n\u5927\u5c0f\uff1a${formatFileSize(file.size)}\n\u5b57\u8282\u957f\u5ea6\uff1a${bytes.length}`;
-          preview.classList.remove("hidden");
-          setQRStatus("\u6587\u4ef6\u5df2\u8f7d\u5165\uff0c\u53ef\u751f\u6210\u4e8c\u7ef4\u7801\u3002");
-          syncCompressionControls();
-          estimateCurrentPayloadStats();
-        };
-        reader.readAsArrayBuffer(file);
+          }
+          preview.textContent = `\u6587\u4ef6\uff1a${file.name}\n\u5927\u5c0f\uff1a${formatFileSize(file.size)}\n\u5b57\u8282\u957f\u5ea6\uff1a${bytes.length}`
+          preview.classList.remove('hidden')
+          setQRStatus('\u6587\u4ef6\u5df2\u8f7d\u5165\uff0c\u53ef\u751f\u6210\u4e8c\u7ef4\u7801\u3002')
+          syncCompressionControls()
+          estimateCurrentPayloadStats()
+        }
+        reader.readAsArrayBuffer(file)
       }
 
-      document.getElementById("qrFileInput").addEventListener("change", (event) => {
-        const file = event.target.files && event.target.files[0];
-        handleQRFile(file);
-        event.target.value = "";
-      });
+      document.getElementById('qrFileInput').addEventListener('change', (event) => {
+        const file = event.target.files && event.target.files[0]
+        handleQRFile(file)
+        event.target.value = ''
+      })
 
-      document.getElementById("qrTextInput").addEventListener("input", (event) => {
-        state.textDraft = event.target.value;
-        if (state.inputMode === "text") {
-          estimateCurrentPayloadStats();
+      document.getElementById('qrTextInput').addEventListener('input', (event) => {
+        state.textDraft = event.target.value
+        if (state.inputMode === 'text') {
+          estimateCurrentPayloadStats()
         }
-      });
+      })
 
-      const qrFileDropZone = document.getElementById("qrFileDropZone");
-      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+      const qrFileDropZone = document.getElementById('qrFileDropZone')
+      ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
         qrFileDropZone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-        });
-      });
-      ["dragenter", "dragover"].forEach((eventName) => {
-        qrFileDropZone.addEventListener(eventName, () => qrFileDropZone.classList.add("dragover"));
-      });
-      ["dragleave", "drop"].forEach((eventName) => {
-        qrFileDropZone.addEventListener(eventName, () => qrFileDropZone.classList.remove("dragover"));
-      });
-      qrFileDropZone.addEventListener("drop", (event) => {
-        const file = event.dataTransfer.files && event.dataTransfer.files[0];
-        handleQRFile(file);
-      });
+          event.preventDefault()
+          event.stopPropagation()
+        })
+      })
+      ;['dragenter', 'dragover'].forEach((eventName) => {
+        qrFileDropZone.addEventListener(eventName, () => qrFileDropZone.classList.add('dragover'))
+      })
+      ;['dragleave', 'drop'].forEach((eventName) => {
+        qrFileDropZone.addEventListener(eventName, () => qrFileDropZone.classList.remove('dragover'))
+      })
+      qrFileDropZone.addEventListener('drop', (event) => {
+        const file = event.dataTransfer.files && event.dataTransfer.files[0]
+        handleQRFile(file)
+      })
 
       function downloadFile(url, name) {
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = name;
-        a.target = "_blank";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        const a = document.createElement('a')
+        a.href = url
+        a.download = name
+        a.target = '_blank'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
       }
 
       function downloadBlob(blob, name) {
-        const url = URL.createObjectURL(blob);
-        downloadFile(url, name);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        const url = URL.createObjectURL(blob)
+        downloadFile(url, name)
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
       }
 
       function dataURLtoBlob(dataurl) {
-        const parts = dataurl.split(",");
-        const mime = parts[0].match(/:(.*?);/)[1];
-        const binary = atob(parts[1]);
-        const bytes = new Uint8Array(binary.length);
+        const parts = dataurl.split(',')
+        const mime = parts[0].match(/:(.*?);/)[1]
+        const binary = atob(parts[1])
+        const bytes = new Uint8Array(binary.length)
         for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
+          bytes[i] = binary.charCodeAt(i)
         }
-        return new Blob([bytes], { type: mime });
+        return new Blob([bytes], { type: mime })
       }
 
       function updateQRStats(rawLength, compressedLength, segmentsLength) {
-        document.getElementById("rawLength").textContent = String(rawLength);
-        document.getElementById("compressedLength").textContent = String(compressedLength);
-        document.getElementById("segmentCount").textContent = String(segmentsLength);
+        document.getElementById('rawLength').textContent = String(rawLength)
+        document.getElementById('compressedLength').textContent = String(compressedLength)
+        document.getElementById('segmentCount').textContent = String(segmentsLength)
       }
 
       function getCurrentQRInputValue() {
-        if (state.inputMode === "file") {
-          return state.fileBytes;
+        if (state.inputMode === 'file') {
+          return state.fileBytes
         }
-        return document.getElementById("qrTextInput").value;
+        return document.getElementById('qrTextInput').value
       }
 
-      function estimateCurrentPayloadStats() {
-        const payload = getCurrentQRInputValue();
-        const isFileMode = state.inputMode === "file";
+      // 统计与正式生成复用后台预处理，避免重复压缩同一份文件。
+      function prepareQrTransmission(inputMode, payload, errorLevel) {
+        const fileMeta = state.fileMeta
+        const forceCompress = state.forceCompress
+        if (
+          qrTransmissionCache &&
+          qrTransmissionCache.inputMode === inputMode &&
+          qrTransmissionCache.payload === payload &&
+          qrTransmissionCache.fileMeta === fileMeta &&
+          qrTransmissionCache.forceCompress === forceCompress &&
+          qrTransmissionCache.errorLevel === errorLevel
+        ) {
+          return qrTransmissionCache.promise
+        }
+        const promise = (async () => {
+          if (qrWorkerReady || ensureQrWorker()) {
+            try {
+              const fileBytesBuffer = inputMode === 'file' ? payload.slice().buffer : null
+              const result = await workerCall(
+                'buildTransmission',
+                {
+                  inputMode,
+                  fileBytesBuffer,
+                  text: inputMode === 'text' ? payload : '',
+                  fileMeta,
+                  forceCompress,
+                  maxFileSizeBytes: MAX_FILE_SIZE_BYTES,
+                  fileVolumeBytes: FILE_VOLUME_BYTES,
+                  maxCompressedPreviewBytes: MAX_COMPRESSED_PREVIEW_BYTES,
+                  errorLevel,
+                },
+                fileBytesBuffer ? [fileBytesBuffer] : [],
+              )
+              return {
+                transmission: result,
+                segments: result.segmentBuffers.map((buffer) => new Uint8Array(buffer)),
+              }
+            } catch (error) {
+              // 浏览器禁用 Worker 时保留原有单线程兼容路径。
+            }
+          }
+          const transmission = buildTransmissionPayload(inputMode, payload, fileMeta, forceCompress)
+          const segments = splitV5BinarySegments(transmission.metaBytes, transmission.payloadBytes, getChunkSizeByEcc(errorLevel))
+          return { transmission, segments }
+        })()
+        qrTransmissionCache = {
+          inputMode,
+          payload,
+          fileMeta,
+          forceCompress,
+          errorLevel,
+          promise,
+        }
+        return promise
+      }
+
+      async function estimateCurrentPayloadStats() {
+        const estimateToken = ++qrEstimateToken
+        const payload = getCurrentQRInputValue()
+        const isFileMode = state.inputMode === 'file'
 
         if (isFileMode) {
           if (!(payload instanceof Uint8Array) || payload.length === 0) {
-            updateQRStats(0, 0, 0);
-            return null;
+            updateQRStats(0, 0, 0)
+            return null
           }
         } else {
-          if (typeof payload !== "string" || !payload.trim()) {
-            updateQRStats(0, 0, 0);
-            return null;
+          if (typeof payload !== 'string' || !payload.trim()) {
+            updateQRStats(0, 0, 0)
+            return null
           }
-          const textBytes = new TextEncoder().encode(payload);
+          const textBytes = new TextEncoder().encode(payload)
           if (textBytes.length > MAX_TEXT_SIZE_BYTES) {
-            updateQRStats(textBytes.length, 0, 0);
-            return null;
+            updateQRStats(textBytes.length, 0, 0)
+            return null
           }
         }
 
         try {
-          const transmission = buildTransmissionPayload(state.inputMode, payload);
-          const chunkSize = getChunkSizeByEcc(state.qrEcc);
-          const segments = splitV5BinarySegments(
-            transmission.metaBytes,
-            transmission.payloadBytes,
-            chunkSize
-          );
-          updateQRStats(transmission.rawLength, transmission.processedLength, segments.length);
-          return { transmission, segments };
+          const { transmission, segments } = await prepareQrTransmission(state.inputMode, payload, state.qrEcc)
+          if (estimateToken !== qrEstimateToken) return null
+          updateQRStats(transmission.rawLength, transmission.processedLength, segments.length)
+          return { transmission, segments }
         } catch (error) {
-          updateQRStats(0, 0, 0);
-          return null;
+          if (estimateToken !== qrEstimateToken) return null
+          updateQRStats(0, 0, 0)
+          return null
         }
       }
 
       async function downloadAllQRZip() {
-        if (!state.qrImages.length) return;
-        const batchBtn = document.getElementById("batchDownloadBtn");
-        setButtonLoading(batchBtn, true, "下载中...");
+        if (!state.qrImages.length) return
+        const batchBtn = document.getElementById('batchDownloadBtn')
+        setButtonLoading(batchBtn, true, '下载中...')
         try {
           if (state.qrImages.length === 1) {
-            const only = state.qrImages[0];
-            downloadFile(only.dataUrl, only.name);
-            return;
+            const only = state.qrImages[0]
+            downloadFile(only.dataUrl, only.name)
+            return
           }
 
-          const zip = new JSZip();
+          const zip = new JSZip()
           state.qrImages.forEach((item) => {
-            zip.file(item.name, dataURLtoBlob(item.dataUrl));
-          });
+            zip.file(item.name, dataURLtoBlob(item.dataUrl))
+          })
 
-          const blob = await zip.generateAsync({ type: "blob" });
-          downloadBlob(blob, "qrcode-images.zip");
+          const blob = await zip.generateAsync({ type: 'blob' })
+          downloadBlob(blob, 'qrcode-images.zip')
         } finally {
-          setButtonLoading(batchBtn, false);
+          setButtonLoading(batchBtn, false)
         }
       }
 
       function openQrGallery() {
-        if (!state.qrImages.length) return;
+        if (!state.qrImages.length) return
 
-        let page = 1;
-        let gridSize = 2;
-        const maxGridSize = 20;
-        const wrap = document.createElement("div");
-        wrap.className = "qr-gallery-view";
+        let page = 1
+        let gridSize = 2
+        const maxGridSize = 20
+        const wrap = document.createElement('div')
+        wrap.className = 'qr-gallery-view'
 
-        const gallery = document.createElement("div");
-        gallery.className = "qr-gallery";
-        wrap.appendChild(gallery);
+        const gallery = document.createElement('div')
+        gallery.className = 'qr-gallery'
+        wrap.appendChild(gallery)
 
-        const pager = document.createElement("div");
-        pager.className = "qr-gallery-pager";
+        const pager = document.createElement('div')
+        pager.className = 'qr-gallery-pager'
 
-        const downloadPageBtn = document.createElement("button");
-        downloadPageBtn.type = "button";
-        downloadPageBtn.className = "btn btn-primary qr-gallery-download";
-        downloadPageBtn.textContent = "\u4e0b\u8f7d\u5f53\u524d\u9875\u4e8c\u7ef4\u7801";
-        pager.appendChild(downloadPageBtn);
+        const downloadPageBtn = document.createElement('button')
+        downloadPageBtn.type = 'button'
+        downloadPageBtn.className = 'btn btn-primary qr-gallery-download'
+        downloadPageBtn.textContent = '\u4e0b\u8f7d\u5f53\u524d\u9875\u4e8c\u7ef4\u7801'
+        pager.appendChild(downloadPageBtn)
 
-        const pagerSpacer = document.createElement("div");
-        pagerSpacer.className = "qr-gallery-spacer";
-        pager.appendChild(pagerSpacer);
+        const pagerSpacer = document.createElement('div')
+        pagerSpacer.className = 'qr-gallery-spacer'
+        pager.appendChild(pagerSpacer)
 
-        const prevBtn = document.createElement("button");
-        prevBtn.type = "button";
-        prevBtn.className = "btn btn-secondary";
-        prevBtn.textContent = "\u4e0a\u4e00\u9875";
-        pager.appendChild(prevBtn);
+        const prevBtn = document.createElement('button')
+        prevBtn.type = 'button'
+        prevBtn.className = 'btn btn-secondary'
+        prevBtn.textContent = '\u4e0a\u4e00\u9875'
+        pager.appendChild(prevBtn)
 
-        const center = document.createElement("div");
-        center.className = "qr-gallery-page-info";
-        pager.appendChild(center);
+        const center = document.createElement('div')
+        center.className = 'qr-gallery-page-info'
+        pager.appendChild(center)
 
-        const nextBtn = document.createElement("button");
-        nextBtn.type = "button";
-        nextBtn.className = "btn btn-secondary";
-        nextBtn.textContent = "\u4e0b\u4e00\u9875";
-        pager.appendChild(nextBtn);
+        const nextBtn = document.createElement('button')
+        nextBtn.type = 'button'
+        nextBtn.className = 'btn btn-secondary'
+        nextBtn.textContent = '\u4e0b\u4e00\u9875'
+        pager.appendChild(nextBtn)
 
-        const gridSizeInput = document.createElement("input");
-        gridSizeInput.type = "number";
-        gridSizeInput.min = "1";
-        gridSizeInput.max = String(maxGridSize);
-        gridSizeInput.step = "1";
-        gridSizeInput.value = String(gridSize);
-        gridSizeInput.className = "qr-gallery-page-input";
-        gridSizeInput.title = "\u6bcf\u9875\u5c55\u793a n*n";
-        gridSizeInput.setAttribute("aria-label", "\u6bcf\u9875\u5c55\u793a n*n");
+        const gridSizeInput = document.createElement('input')
+        gridSizeInput.type = 'number'
+        gridSizeInput.min = '1'
+        gridSizeInput.max = String(maxGridSize)
+        gridSizeInput.step = '1'
+        gridSizeInput.value = String(gridSize)
+        gridSizeInput.className = 'qr-gallery-page-input'
+        gridSizeInput.title = '\u6bcf\u9875\u5c55\u793a n*n'
+        gridSizeInput.setAttribute('aria-label', '\u6bcf\u9875\u5c55\u793a n*n')
 
-        const jumpControls = document.createElement("div");
-        jumpControls.className = "qr-gallery-jump";
+        const jumpControls = document.createElement('div')
+        jumpControls.className = 'qr-gallery-jump'
 
-        const jumpLabel = document.createElement("span");
-        jumpLabel.textContent = "\u8df3\u5230";
-        jumpControls.appendChild(jumpLabel);
+        const jumpLabel = document.createElement('span')
+        jumpLabel.textContent = '\u8df3\u5230'
+        jumpControls.appendChild(jumpLabel)
 
-        const pageInput = document.createElement("input");
-        pageInput.type = "number";
-        pageInput.min = "1";
-        pageInput.step = "1";
-        pageInput.className = "qr-gallery-page-input";
-        jumpControls.appendChild(pageInput);
+        const pageInput = document.createElement('input')
+        pageInput.type = 'number'
+        pageInput.min = '1'
+        pageInput.step = '1'
+        pageInput.className = 'qr-gallery-page-input'
+        jumpControls.appendChild(pageInput)
 
-        const jumpSuffix = document.createElement("span");
-        jumpSuffix.textContent = "\u9875";
-        jumpControls.appendChild(jumpSuffix);
+        const jumpSuffix = document.createElement('span')
+        jumpSuffix.textContent = '\u9875'
+        jumpControls.appendChild(jumpSuffix)
 
-        const jumpBtn = document.createElement("button");
-        jumpBtn.type = "button";
-        jumpBtn.className = "btn btn-secondary";
-        jumpBtn.textContent = "\u8df3\u8f6c";
-        jumpControls.appendChild(jumpBtn);
-        pager.appendChild(jumpControls);
+        const jumpBtn = document.createElement('button')
+        jumpBtn.type = 'button'
+        jumpBtn.className = 'btn btn-secondary'
+        jumpBtn.textContent = '\u8df3\u8f6c'
+        jumpControls.appendChild(jumpBtn)
+        pager.appendChild(jumpControls)
 
-        wrap.appendChild(pager);
+        wrap.appendChild(pager)
 
         function getItemsPerPage() {
-          return gridSize * gridSize;
+          return gridSize * gridSize
         }
 
         function getTotalPages() {
-          return Math.max(1, Math.ceil(state.qrImages.length / getItemsPerPage()));
+          return Math.max(1, Math.ceil(state.qrImages.length / getItemsPerPage()))
         }
 
         function clampGridSize(value) {
-          const parsed = Number.parseInt(value, 10);
-          if (!Number.isFinite(parsed)) return 1;
-          return Math.min(maxGridSize, Math.max(1, parsed));
+          const parsed = Number.parseInt(value, 10)
+          if (!Number.isFinite(parsed)) return 1
+          return Math.min(maxGridSize, Math.max(1, parsed))
         }
 
         function getCurrentPageItems() {
-          const itemsPerPage = getItemsPerPage();
-          const start = (page - 1) * itemsPerPage;
-          return state.qrImages.slice(start, start + itemsPerPage);
+          const itemsPerPage = getItemsPerPage()
+          const start = (page - 1) * itemsPerPage
+          return state.qrImages.slice(start, start + itemsPerPage)
         }
 
         function renderPage() {
-          const totalPages = getTotalPages();
-          page = Math.min(totalPages, Math.max(1, page));
-          const itemsPerPage = getItemsPerPage();
-          const pageItems = getCurrentPageItems();
-          const fragment = document.createDocumentFragment();
+          const totalPages = getTotalPages()
+          page = Math.min(totalPages, Math.max(1, page))
+          const itemsPerPage = getItemsPerPage()
+          const pageItems = getCurrentPageItems()
+          const fragment = document.createDocumentFragment()
 
-          gallery.innerHTML = "";
-          gallery.style.setProperty("--qr-gallery-cols", String(gridSize));
-          gallery.style.setProperty("--qr-gallery-rows", String(gridSize));
+          gallery.innerHTML = ''
+          gallery.style.setProperty('--qr-gallery-cols', String(gridSize))
+          gallery.style.setProperty('--qr-gallery-rows', String(gridSize))
 
           pageItems.forEach((item) => {
-            const tile = document.createElement("div");
-            tile.className = "qr-gallery-item";
+            const tile = document.createElement('div')
+            tile.className = 'qr-gallery-item'
 
-            const img = document.createElement("img");
-            img.alt = item.name;
-            img.src = item.dataUrl;
-            tile.appendChild(img);
+            const img = document.createElement('img')
+            img.alt = item.name
+            img.src = item.dataUrl
+            tile.appendChild(img)
 
-            fragment.appendChild(tile);
-          });
+            fragment.appendChild(tile)
+          })
 
           for (let i = pageItems.length; i < itemsPerPage; i++) {
-            const placeholder = document.createElement("div");
-            placeholder.className = "qr-gallery-item";
-            placeholder.style.visibility = "hidden";
-            fragment.appendChild(placeholder);
+            const placeholder = document.createElement('div')
+            placeholder.className = 'qr-gallery-item'
+            placeholder.style.visibility = 'hidden'
+            fragment.appendChild(placeholder)
           }
 
-          gallery.appendChild(fragment);
-          center.textContent = "";
-          center.append("\u7b2c ", String(page), " / ", String(totalPages), " \u9875\uff0c\u5f53\u524d ");
-          center.appendChild(gridSizeInput);
-          center.append("*", String(gridSize), "\uff0c\u5171 ", String(state.qrImages.length), " \u5f20");
-          prevBtn.disabled = page <= 1;
-          nextBtn.disabled = page >= totalPages;
-          gridSizeInput.value = String(gridSize);
-          pageInput.max = String(totalPages);
-          pageInput.value = String(page);
-          downloadPageBtn.disabled = pageItems.length === 0;
+          gallery.appendChild(fragment)
+          center.textContent = ''
+          center.append('\u7b2c ', String(page), ' / ', String(totalPages), ' \u9875\uff0c\u5f53\u524d ')
+          center.appendChild(gridSizeInput)
+          center.append('*', String(gridSize), '\uff0c\u5171 ', String(state.qrImages.length), ' \u5f20')
+          prevBtn.disabled = page <= 1
+          nextBtn.disabled = page >= totalPages
+          gridSizeInput.value = String(gridSize)
+          pageInput.max = String(totalPages)
+          pageInput.value = String(page)
+          downloadPageBtn.disabled = pageItems.length === 0
         }
 
-        prevBtn.addEventListener("click", () => {
-          page -= 1;
-          renderPage();
-        });
+        prevBtn.addEventListener('click', () => {
+          page -= 1
+          renderPage()
+        })
 
-        nextBtn.addEventListener("click", () => {
-          page += 1;
-          renderPage();
-        });
+        nextBtn.addEventListener('click', () => {
+          page += 1
+          renderPage()
+        })
 
-        gridSizeInput.addEventListener("change", () => {
-          gridSize = clampGridSize(gridSizeInput.value);
-          page = 1;
-          renderPage();
-        });
+        gridSizeInput.addEventListener('change', () => {
+          gridSize = clampGridSize(gridSizeInput.value)
+          page = 1
+          renderPage()
+        })
 
-        gridSizeInput.addEventListener("keydown", (event) => {
-          if (event.key === "Enter") {
-            gridSize = clampGridSize(gridSizeInput.value);
-            page = 1;
-            renderPage();
+        gridSizeInput.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            gridSize = clampGridSize(gridSizeInput.value)
+            page = 1
+            renderPage()
           }
-        });
+        })
 
         function jumpToInputPage() {
-          const parsed = Number.parseInt(pageInput.value, 10);
+          const parsed = Number.parseInt(pageInput.value, 10)
           if (!Number.isFinite(parsed)) {
-            pageInput.value = String(page);
-            return;
+            pageInput.value = String(page)
+            return
           }
-          page = Math.min(getTotalPages(), Math.max(1, parsed));
-          renderPage();
+          page = Math.min(getTotalPages(), Math.max(1, parsed))
+          renderPage()
         }
 
-        jumpBtn.addEventListener("click", jumpToInputPage);
+        jumpBtn.addEventListener('click', jumpToInputPage)
 
-        pageInput.addEventListener("keydown", (event) => {
-          if (event.key === "Enter") {
-            jumpToInputPage();
+        pageInput.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            jumpToInputPage()
           }
-        });
+        })
 
-        downloadPageBtn.addEventListener("click", async () => {
-          const pageItems = getCurrentPageItems();
-          if (!pageItems.length) return;
+        downloadPageBtn.addEventListener('click', async () => {
+          const pageItems = getCurrentPageItems()
+          if (!pageItems.length) return
 
-          const originalText = downloadPageBtn.textContent;
-          setButtonLoading(downloadPageBtn, true, "\u4e0b\u8f7d\u4e2d...");
+          const originalText = downloadPageBtn.textContent
+          setButtonLoading(downloadPageBtn, true, '\u4e0b\u8f7d\u4e2d...')
           try {
             if (pageItems.length === 1) {
-              const only = pageItems[0];
-              downloadFile(only.dataUrl, only.name);
-              return;
+              const only = pageItems[0]
+              downloadFile(only.dataUrl, only.name)
+              return
             }
 
-            const zip = new JSZip();
+            const zip = new JSZip()
             pageItems.forEach((item) => {
-              zip.file(item.name, dataURLtoBlob(item.dataUrl));
-            });
-            const blob = await zip.generateAsync({ type: "blob" });
-            downloadBlob(blob, `qrcode-page-${page}.zip`);
+              zip.file(item.name, dataURLtoBlob(item.dataUrl))
+            })
+            const blob = await zip.generateAsync({ type: 'blob' })
+            downloadBlob(blob, `qrcode-page-${page}.zip`)
           } finally {
-            setButtonLoading(downloadPageBtn, false);
-            downloadPageBtn.textContent = originalText;
+            setButtonLoading(downloadPageBtn, false)
+            downloadPageBtn.textContent = originalText
           }
-        });
+        })
 
-        renderPage();
-        openModal("\u4e8c\u7ef4\u7801\u5217\u8868", wrap, { gallery: true });
+        renderPage()
+        openModal('\u4e8c\u7ef4\u7801\u5217\u8868', wrap, { gallery: true })
       }
 
       function previewCompressedResult() {
-        if (!state.compressed) return;
-        const wrap = document.createElement("div");
-        const actions = document.createElement("div");
-        actions.className = "toolbar";
-        const copyBtn = document.createElement("button");
-        copyBtn.type = "button";
-        copyBtn.className = "btn btn-secondary";
-        copyBtn.textContent = "\u590d\u5236\u7ed3\u679c";
-        copyBtn.addEventListener("click", async () => {
-          const originalText = copyBtn.textContent;
+        if (!state.compressed) return
+        const wrap = document.createElement('div')
+        const actions = document.createElement('div')
+        actions.className = 'toolbar'
+        const copyBtn = document.createElement('button')
+        copyBtn.type = 'button'
+        copyBtn.className = 'btn btn-secondary'
+        copyBtn.textContent = '\u590d\u5236\u7ed3\u679c'
+        copyBtn.addEventListener('click', async () => {
+          const originalText = copyBtn.textContent
           try {
-            await copyText(state.compressed);
-            copyBtn.textContent = "\u5df2\u590d\u5236";
+            await copyText(state.compressed)
+            copyBtn.textContent = '\u5df2\u590d\u5236'
           } catch (error) {
-            copyBtn.textContent = "\u590d\u5236\u5931\u8d25";
+            copyBtn.textContent = '\u590d\u5236\u5931\u8d25'
           }
           setTimeout(() => {
-            copyBtn.textContent = originalText;
-          }, 1200);
-        });
-        actions.appendChild(copyBtn);
-        wrap.appendChild(actions);
-        const pre = document.createElement("pre");
-        pre.className = "modal-pre";
-        pre.textContent = state.compressed;
-        wrap.appendChild(pre);
-        openModal("压缩结果", wrap);
+            copyBtn.textContent = originalText
+          }, 1200)
+        })
+        actions.appendChild(copyBtn)
+        wrap.appendChild(actions)
+        const pre = document.createElement('pre')
+        pre.className = 'modal-pre'
+        pre.textContent = state.compressed
+        wrap.appendChild(pre)
+        openModal('压缩结果', wrap)
       }
 
       function decodeTextInput() {
-        const decodeBtn = document.getElementById("decodeTextBtn");
-        setButtonLoading(decodeBtn, true, "解码中...");
-        const input = document.getElementById("decodeText").value;
-        clearDecodeError();
+        const decodeBtn = document.getElementById('decodeTextBtn')
+        setButtonLoading(decodeBtn, true, '解码中...')
+        const input = document.getElementById('decodeText').value
+        clearDecodeError()
 
         try {
-          const decoded = decodePayload(input);
-          setDecodeResult(decoded.text, decoded.canDownload, decoded);
-          clearDecodeError();
+          const decoded = decodePayload(input)
+          setDecodeResult(decoded.text, decoded.canDownload, decoded)
+          clearDecodeError()
         } catch (error) {
-          setDecodeResult("解码失败", false);
-          setDecodeError(error.message);
+          setDecodeResult('解码失败', false)
+          setDecodeError(error.message)
         } finally {
-          setButtonLoading(decodeBtn, false);
+          setButtonLoading(decodeBtn, false)
         }
       }
 
       function previewDecodedResult() {
-        if (!state.decodedPayload) return;
-        const wrap = document.createElement("div");
-        const pre = document.createElement("pre");
-        pre.className = "modal-pre";
-        pre.textContent = state.decodedPayload;
-        wrap.appendChild(pre);
-        openModal("解码结果预览", wrap);
+        if (!state.decodedPayload) return
+        const wrap = document.createElement('div')
+        const pre = document.createElement('pre')
+        pre.className = 'modal-pre'
+        pre.textContent = state.decodedPayload
+        wrap.appendChild(pre)
+        openModal('解码结果预览', wrap)
       }
 
       function downloadDecodedFile() {
-        if (!state.decodedCanDownload) return;
+        if (!state.decodedCanDownload) return
 
         if (state.decodedFile && state.decodedFile.bytes) {
           const blob = new Blob([state.decodedFile.bytes], {
-            type: state.decodedFile.type || "application/octet-stream",
-          });
-          downloadBlob(blob, state.decodedFile.name || "decoded.bin");
-          return;
+            type: state.decodedFile.type || 'application/octet-stream',
+          })
+          downloadBlob(blob, state.decodedFile.name || 'decoded.bin')
+          return
         }
 
-        if (!state.decodedPayload) return;
+        if (!state.decodedPayload) return
         try {
-          const parsed = JSON.parse(state.decodedPayload);
+          const parsed = JSON.parse(state.decodedPayload)
           if (parsed && parsed.dataurl && parsed.filename) {
-            downloadBlob(dataURLtoBlob(parsed.dataurl), parsed.filename);
-            return;
+            downloadBlob(dataURLtoBlob(parsed.dataurl), parsed.filename)
+            return
           }
         } catch (error) {
           // Fallback to plain text.
         }
 
         downloadBlob(
-          new Blob([state.decodedPayload], { type: "text/plain;charset=utf-8" }),
-          "decoded.txt"
-        );
+          new Blob([state.decodedPayload], {
+            type: 'text/plain;charset=utf-8',
+          }),
+          'decoded.txt',
+        )
       }
 
       async function renderQrFromMatrixToDataUrl(matrixBuffer, moduleCount, finalSize) {
         return new Promise((resolve, reject) => {
-          const matrix = new Uint8Array(matrixBuffer);
-          const padding = Math.max(18, Math.round(finalSize * 0.05));
-          const qrArea = Math.max(128, finalSize - padding * 2);
-          const cell = Math.max(1, Math.floor(qrArea / moduleCount));
-          const drawSize = cell * moduleCount;
-          const offsetX = Math.floor((finalSize - drawSize) / 2);
-          const offsetY = Math.floor((finalSize - drawSize) / 2);
+          const matrix = new Uint8Array(matrixBuffer)
+          const padding = Math.max(18, Math.round(finalSize * 0.05))
+          const qrArea = Math.max(128, finalSize - padding * 2)
+          const cell = Math.max(1, Math.floor(qrArea / moduleCount))
+          const drawSize = cell * moduleCount
+          const offsetX = Math.floor((finalSize - drawSize) / 2)
+          const offsetY = Math.floor((finalSize - drawSize) / 2)
 
-          const canvas = document.createElement("canvas");
-          canvas.width = finalSize;
-          canvas.height = finalSize;
-          const ctx = canvas.getContext("2d");
+          const canvas = document.createElement('canvas')
+          canvas.width = finalSize
+          canvas.height = finalSize
+          const ctx = canvas.getContext('2d')
           if (!ctx) {
-            reject(new Error("二维码生成失败"));
-            return;
+            reject(new Error('二维码生成失败'))
+            return
           }
 
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, finalSize, finalSize);
-          ctx.fillStyle = "#000000";
-          let idx = 0;
+          ctx.fillStyle = '#ffffff'
+          ctx.fillRect(0, 0, finalSize, finalSize)
+          ctx.fillStyle = '#000000'
+          let idx = 0
           for (let r = 0; r < moduleCount; r++) {
             for (let c = 0; c < moduleCount; c++) {
               if (matrix[idx++] === 1) {
-                ctx.fillRect(offsetX + c * cell, offsetY + r * cell, cell, cell);
+                ctx.fillRect(offsetX + c * cell, offsetY + r * cell, cell, cell)
               }
             }
           }
-          resolve(canvas.toDataURL("image/png"));
-        });
+          resolve(canvas.toDataURL('image/png'))
+        })
       }
 
       async function createQRCodeDataUrl(payload, finalSize, errorLevel) {
-        const payloadBytes =
-          payload instanceof Uint8Array ? payload : new TextEncoder().encode(String(payload || ""));
+        const payloadBytes = payload instanceof Uint8Array ? payload : new TextEncoder().encode(String(payload || ''))
         if (qrWorkerReady || ensureQrWorker()) {
           try {
-            const payloadBuffer = payloadBytes.buffer.slice(
-              payloadBytes.byteOffset,
-              payloadBytes.byteOffset + payloadBytes.byteLength
-            );
-            const workerResult = await workerCall(
-              "renderQr",
-              { payloadBuffer, finalSize, errorLevel },
-              [payloadBuffer]
-            );
-            if (workerResult && workerResult.kind === "png" && workerResult.pngBuffer) {
-              const blob = new Blob([workerResult.pngBuffer], { type: "image/png" });
+            const payloadBuffer = payloadBytes.buffer.slice(payloadBytes.byteOffset, payloadBytes.byteOffset + payloadBytes.byteLength)
+            const workerResult = await workerCall('renderQr', { payloadBuffer, finalSize, errorLevel }, [payloadBuffer])
+            if (workerResult && workerResult.kind === 'png' && workerResult.pngBuffer) {
+              const blob = new Blob([workerResult.pngBuffer], {
+                type: 'image/png',
+              })
               return await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = () => reject(new Error("二维码生成失败"));
-                reader.readAsDataURL(blob);
-              });
+                const reader = new FileReader()
+                reader.onload = () => resolve(reader.result)
+                reader.onerror = () => reject(new Error('二维码生成失败'))
+                reader.readAsDataURL(blob)
+              })
             }
-            if (workerResult && workerResult.kind === "matrix" && workerResult.matrixBuffer) {
-              return await renderQrFromMatrixToDataUrl(
-                workerResult.matrixBuffer,
-                workerResult.moduleCount,
-                finalSize
-              );
+            if (workerResult && workerResult.kind === 'matrix' && workerResult.matrixBuffer) {
+              return await renderQrFromMatrixToDataUrl(workerResult.matrixBuffer, workerResult.moduleCount, finalSize)
             }
           } catch (error) {
             // fallback to main thread
@@ -2566,374 +2602,356 @@
 
         return new Promise((resolve, reject) => {
           try {
-            const qr = qrcode(0, errorLevel);
-            qr.addData(bytesToBinaryString(payloadBytes), "Byte");
-            qr.make();
+            const qr = qrcode(0, errorLevel)
+            qr.addData(bytesToBinaryString(payloadBytes), 'Byte')
+            qr.make()
 
-            const moduleCount = qr.getModuleCount();
-            const padding = Math.max(18, Math.round(finalSize * 0.05));
-            const qrArea = Math.max(128, finalSize - padding * 2);
-            const cell = Math.max(1, Math.floor(qrArea / moduleCount));
-            const drawSize = cell * moduleCount;
-            const offsetX = Math.floor((finalSize - drawSize) / 2);
-            const offsetY = Math.floor((finalSize - drawSize) / 2);
+            const moduleCount = qr.getModuleCount()
+            const padding = Math.max(18, Math.round(finalSize * 0.05))
+            const qrArea = Math.max(128, finalSize - padding * 2)
+            const cell = Math.max(1, Math.floor(qrArea / moduleCount))
+            const drawSize = cell * moduleCount
+            const offsetX = Math.floor((finalSize - drawSize) / 2)
+            const offsetY = Math.floor((finalSize - drawSize) / 2)
 
-            const canvas = document.createElement("canvas");
-            canvas.width = finalSize;
-            canvas.height = finalSize;
-            const ctx = canvas.getContext("2d");
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, finalSize, finalSize);
-            ctx.fillStyle = "#000000";
+            const canvas = document.createElement('canvas')
+            canvas.width = finalSize
+            canvas.height = finalSize
+            const ctx = canvas.getContext('2d')
+            ctx.fillStyle = '#ffffff'
+            ctx.fillRect(0, 0, finalSize, finalSize)
+            ctx.fillStyle = '#000000'
 
             for (let r = 0; r < moduleCount; r++) {
               for (let c = 0; c < moduleCount; c++) {
                 if (qr.isDark(r, c)) {
-                  ctx.fillRect(offsetX + c * cell, offsetY + r * cell, cell, cell);
+                  ctx.fillRect(offsetX + c * cell, offsetY + r * cell, cell, cell)
                 }
               }
             }
-            resolve(canvas.toDataURL("image/png"));
+            resolve(canvas.toDataURL('image/png'))
           } catch (error) {
-            reject(error instanceof Error ? error : new Error("二维码生成失败"));
+            reject(error instanceof Error ? error : new Error('二维码生成失败'))
           }
-        });
+        })
       }
 
       async function generateQR() {
         if (state.isGenerating) {
-          setQRStatus("\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801\uff0c\u8bf7\u7a0d\u5019\u3002");
-          return;
+          setQRStatus('\u6b63\u5728\u751f\u6210\u4e8c\u7ef4\u7801\uff0c\u8bf7\u7a0d\u5019\u3002')
+          return
         }
 
-        const payload = getCurrentQRInputValue();
-        const isFileMode = state.inputMode === "file";
-        const qrSize = parseInt(state.qrSize, 10);
-        const errorLevel = state.qrEcc;
-        const token = ++state.generationToken;
-        const generateBtn = document.getElementById("generateBtn");
-        setButtonLoading(generateBtn, true, "生成中...");
-        state.isGenerating = true;
+        const payload = getCurrentQRInputValue()
+        const inputMode = state.inputMode
+        const isFileMode = inputMode === 'file'
+        const qrSize = parseInt(state.qrSize, 10)
+        const errorLevel = state.qrEcc
+        const token = ++state.generationToken
+        const generateBtn = document.getElementById('generateBtn')
+        setButtonLoading(generateBtn, true, '生成中...')
+        state.isGenerating = true
 
-        state.qrImages = [];
-        setBatchDownloadEnabled(false);
-        setShowQrEnabled(false);
-        setShowCompressedEnabled(false);
+        state.qrImages = []
+        setBatchDownloadEnabled(false)
+        setShowQrEnabled(false)
+        setShowCompressedEnabled(false)
 
         if (isFileMode) {
           if (!(payload instanceof Uint8Array) || payload.length === 0) {
-            setQRStatus("\u8bf7\u5148\u9009\u62e9\u6587\u4ef6\u3002");
-            updateQRStats(0, 0, 0);
-            state.isGenerating = false;
-            setButtonLoading(generateBtn, false);
-            return;
+            setQRStatus('\u8bf7\u5148\u9009\u62e9\u6587\u4ef6\u3002')
+            updateQRStats(0, 0, 0)
+            state.isGenerating = false
+            setButtonLoading(generateBtn, false)
+            return
           }
           if (payload.length > MAX_FILE_SIZE_BYTES) {
-            setQRStatus(`\u6587\u4ef6\u8fc7\u5927\uff08${payload.length} \u5b57\u8282\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB\u3002`);
-            updateQRStats(payload.length, 0, 0);
-            state.isGenerating = false;
-            setButtonLoading(generateBtn, false);
-            return;
+            setQRStatus(`\u6587\u4ef6\u8fc7\u5927\uff08${payload.length} \u5b57\u8282\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB\u3002`)
+            updateQRStats(payload.length, 0, 0)
+            state.isGenerating = false
+            setButtonLoading(generateBtn, false)
+            return
           }
         } else {
-          if (typeof payload !== "string" || !payload.trim()) {
-            setQRStatus("\u8bf7\u8f93\u5165\u6587\u672c\u3002");
-            updateQRStats(0, 0, 0);
-            state.isGenerating = false;
-            setButtonLoading(generateBtn, false);
-            return;
+          if (typeof payload !== 'string' || !payload.trim()) {
+            setQRStatus('\u8bf7\u8f93\u5165\u6587\u672c\u3002')
+            updateQRStats(0, 0, 0)
+            state.isGenerating = false
+            setButtonLoading(generateBtn, false)
+            return
           }
-          const textBytes = new TextEncoder().encode(payload);
+          const textBytes = new TextEncoder().encode(payload)
           if (textBytes.length > MAX_TEXT_SIZE_BYTES) {
-            setQRStatus(`\u8f93\u5165\u6587\u672c\u8fc7\u5927\uff08${textBytes.length} \u5b57\u8282\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB\u3002`);
-            updateQRStats(textBytes.length, 0, 0);
-            state.isGenerating = false;
-            setButtonLoading(generateBtn, false);
-            return;
+            setQRStatus(
+              `\u8f93\u5165\u6587\u672c\u8fc7\u5927\uff08${textBytes.length} \u5b57\u8282\uff09\uff0c\u6700\u5927\u652f\u6301 ${MAX_FILE_SIZE_MB}MB\u3002`,
+            )
+            updateQRStats(textBytes.length, 0, 0)
+            state.isGenerating = false
+            setButtonLoading(generateBtn, false)
+            return
           }
         }
 
-        let transmission;
+        let transmission
+        let segments
+        setQRStatus('正在后台预处理文件...')
+        const prepared = prepareQrTransmission(inputMode, payload, errorLevel)
         try {
-          transmission = buildTransmissionPayload(state.inputMode, payload);
+          ;({ transmission, segments } = await prepared)
+          if (token !== state.generationToken) return
         } catch (error) {
-          state.isGenerating = false;
-          setQRStatus(`\u9884\u5904\u7406\u5931\u8d25\uff1a${error.message}`);
-          setButtonLoading(generateBtn, false);
-          return;
+          if (token !== state.generationToken) return
+          state.isGenerating = false
+          setQRStatus(`\u9884\u5904\u7406\u5931\u8d25\uff1a${error.message}`)
+          setButtonLoading(generateBtn, false)
+          return
         }
-
-        const chunkSize = getChunkSizeByEcc(errorLevel);
-        const segments = splitV5BinarySegments(
-          transmission.metaBytes,
-          transmission.payloadBytes,
-          chunkSize
-        );
 
         if (segments.length > MAX_SEGMENT_COUNT) {
-          setQRStatus(`\u9884\u8ba1\u4e8c\u7ef4\u7801 ${segments.length} \u5f20\uff0c\u8d85\u8fc7\u4e0a\u9650 ${MAX_SEGMENT_COUNT} \u5f20\uff0c\u5df2\u4e2d\u6b62\u751f\u6210\u3002`);
-          updateQRStats(transmission.rawLength, transmission.processedLength, segments.length);
-          state.isGenerating = false;
-          setButtonLoading(generateBtn, false);
-          return;
+          setQRStatus(
+            `\u9884\u8ba1\u4e8c\u7ef4\u7801 ${segments.length} \u5f20\uff0c\u8d85\u8fc7\u4e0a\u9650 ${MAX_SEGMENT_COUNT} \u5f20\uff0c\u5df2\u4e2d\u6b62\u751f\u6210\u3002`,
+          )
+          updateQRStats(transmission.rawLength, transmission.processedLength, segments.length)
+          state.isGenerating = false
+          setButtonLoading(generateBtn, false)
+          return
         }
 
-        state.compressed = transmission.combined;
-        updateQRStats(transmission.rawLength, transmission.processedLength, segments.length);
-        setQRStatus(`正在生成二维码 0 / ${segments.length}（${getWorkerModeText()}）`);
-        await new Promise((resolve) => requestAnimationFrame(resolve));
+        state.compressed = transmission.combined
+        updateQRStats(transmission.rawLength, transmission.processedLength, segments.length)
+        setQRStatus(`正在生成二维码 0 / ${segments.length}（${getWorkerModeText()}）`)
+        await new Promise((resolve) => requestAnimationFrame(resolve))
 
-        const outputImages = new Array(segments.length);
-        let nextIndex = 0;
-        let completed = 0;
-        let failed = null;
-        const maxConcurrent =
-          qrWorkerReady && qrWorkers.length > 0
-            ? Math.max(2, Math.min(qrWorkers.length, 8))
-            : 1;
+        const outputImages = new Array(segments.length)
+        let nextIndex = 0
+        let completed = 0
+        let failed = null
+        const maxConcurrent = qrWorkerReady && qrWorkers.length > 0 ? Math.max(2, Math.min(qrWorkers.length, 8)) : 1
 
         const runners = Array.from({ length: maxConcurrent }, async () => {
           while (true) {
-            if (token !== state.generationToken || failed) return;
-            const index = nextIndex++;
-            if (index >= segments.length) return;
+            if (token !== state.generationToken || failed) return
+            const index = nextIndex++
+            if (index >= segments.length) return
             try {
-              const dataUrl = await createQRCodeDataUrl(segments[index], qrSize, errorLevel);
-              if (token !== state.generationToken) return;
+              const dataUrl = await createQRCodeDataUrl(segments[index], qrSize, errorLevel)
+              if (token !== state.generationToken) return
               outputImages[index] = {
                 name: `qrcode-${index + 1}-of-${segments.length}.png`,
                 dataUrl,
-              };
-              completed += 1;
+              }
+              completed += 1
               if (completed === 1 || completed === segments.length || completed % 4 === 0) {
-                setQRStatus(`正在生成二维码 ${completed} / ${segments.length}（${getWorkerModeText()}）`);
+                setQRStatus(`正在生成二维码 ${completed} / ${segments.length}（${getWorkerModeText()}）`)
               }
               if (completed % 24 === 0) {
-                await new Promise((resolve) => requestAnimationFrame(resolve));
+                await new Promise((resolve) => requestAnimationFrame(resolve))
               }
             } catch (error) {
-              failed = { index, error };
-              return;
+              failed = { index, error }
+              return
             }
           }
-        });
-        await Promise.all(runners);
+        })
+        await Promise.all(runners)
+        if (token !== state.generationToken) return
 
         if (failed) {
-          state.isGenerating = false;
-          setQRStatus(`第 ${failed.index + 1} 张生成失败：${failed.error.message}`);
-          setButtonLoading(generateBtn, false);
-          return;
+          state.isGenerating = false
+          setQRStatus(`第 ${failed.index + 1} 张生成失败：${failed.error.message}`)
+          setButtonLoading(generateBtn, false)
+          return
         }
-        state.qrImages = outputImages.filter(Boolean);
+        state.qrImages = outputImages.filter(Boolean)
 
-        if (token !== state.generationToken) {
-          state.isGenerating = false;
-          setButtonLoading(generateBtn, false);
-          return;
-        }
-
-        state.isGenerating = false;
+        state.isGenerating = false
         const strategyText =
-          transmission.strategy === "force"
-            ? "\u5f3a\u5236\u538b\u7f29"
-            : transmission.strategy === "auto"
-              ? "\u81ea\u52a8\u538b\u7f29"
-              : "\u672a\u538b\u7f29";
-        setQRStatus(
-          `生成成功，共 ${segments.length} 张二维码。策略${strategyText}，处理后 ${transmission.processedLength} 字节（${getWorkerModeText()}）。`
-        );
-        setBatchDownloadEnabled(state.qrImages.length > 0);
-        setShowQrEnabled(state.qrImages.length > 0);
-        setShowCompressedEnabled(Boolean(state.compressed));
-        setButtonLoading(generateBtn, false);
+          transmission.strategy === 'force' ? '\u5f3a\u5236\u538b\u7f29' : transmission.strategy === 'auto' ? '\u81ea\u52a8\u538b\u7f29' : '\u672a\u538b\u7f29'
+        setQRStatus(`生成成功，共 ${segments.length} 张二维码。策略${strategyText}，处理后 ${transmission.processedLength} 字节（${getWorkerModeText()}）。`)
+        setBatchDownloadEnabled(state.qrImages.length > 0)
+        setShowQrEnabled(state.qrImages.length > 0)
+        setShowCompressedEnabled(Boolean(state.compressed))
+        setButtonLoading(generateBtn, false)
       }
 
       async function decodeImageFile(file) {
         const fileBuffer = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (event) => resolve(event.target.result);
-          reader.onerror = () => reject(new Error("文件读取失败"));
-          reader.readAsArrayBuffer(file);
-        });
+          const reader = new FileReader()
+          reader.onload = (event) => resolve(event.target.result)
+          reader.onerror = () => reject(new Error('文件读取失败'))
+          reader.readAsArrayBuffer(file)
+        })
 
         if (qrWorkerReady || ensureQrWorker()) {
           try {
-            const transferBuffer = fileBuffer.slice(0);
-            const workerResult = await workerCall(
-              "scanQrFile",
-              { fileBuffer: transferBuffer },
-              [transferBuffer]
-            );
+            const transferBuffer = fileBuffer.slice(0)
+            const workerResult = await workerCall('scanQrFile', { fileBuffer: transferBuffer }, [transferBuffer])
             return {
-              text: workerResult.text || "",
+              text: workerResult.text || '',
               bytes: workerResult.binaryBuffer ? new Uint8Array(workerResult.binaryBuffer) : null,
-            };
+            }
           } catch (error) {
             // fallback to main thread
           }
         }
 
         const dataUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (event) => resolve(event.target.result);
-          reader.onerror = () => reject(new Error("图片加载失败"));
-          reader.readAsDataURL(file);
-        });
+          const reader = new FileReader()
+          reader.onload = (event) => resolve(event.target.result)
+          reader.onerror = () => reject(new Error('图片加载失败'))
+          reader.readAsDataURL(file)
+        })
 
         return new Promise((resolve, reject) => {
-          const image = new Image();
+          const image = new Image()
           image.onload = function () {
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d", { willReadFrequently: true });
-            canvas.width = image.width;
-            canvas.height = image.height;
-            context.drawImage(image, 0, 0);
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            const canvas = document.createElement('canvas')
+            const context = canvas.getContext('2d', {
+              willReadFrequently: true,
+            })
+            canvas.width = image.width
+            canvas.height = image.height
+            context.drawImage(image, 0, 0)
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height)
+            const code = jsQR(imageData.data, imageData.width, imageData.height)
 
             if (!code) {
-              reject(new Error("未识别到二维码"));
-              return;
+              reject(new Error('未识别到二维码'))
+              return
             }
 
             resolve({
-              text: code.data || "",
+              text: code.data || '',
               bytes: code.binaryData ? new Uint8Array(code.binaryData) : null,
-            });
-          };
-          image.onerror = () => reject(new Error("图片加载失败"));
-          image.src = dataUrl;
-        });
+            })
+          }
+          image.onerror = () => reject(new Error('图片加载失败'))
+          image.src = dataUrl
+        })
       }
 
       async function handleDecodeFiles(files) {
-        if (!files || !files.length) return;
-        const token = ++state.decodeToken;
-        state.isDecoding = true;
+        if (!files || !files.length) return
+        const token = ++state.decodeToken
+        state.isDecoding = true
 
-        clearDecodeError();
-        state.segmentsData = null;
-        state.expectedTotal = 0;
-        state.segmentMeta = null;
-        state.decodedFile = null;
+        clearDecodeError()
+        state.segmentsData = null
+        state.expectedTotal = 0
+        state.segmentMeta = null
+        state.decodedFile = null
 
-        const dropZoneEl = document.getElementById("dropZone");
-        const list = document.getElementById("decodeDropList");
-        const fileList = Array.from(files);
-        list.innerHTML = "";
-        list.classList.remove("hidden");
-        dropZoneEl.classList.add("has-items");
+        const dropZoneEl = document.getElementById('dropZone')
+        const list = document.getElementById('decodeDropList')
+        const fileList = Array.from(files)
+        list.innerHTML = ''
+        list.classList.remove('hidden')
+        dropZoneEl.classList.add('has-items')
 
-        const statusNodes = [];
+        const statusNodes = []
         for (let index = 0; index < fileList.length; index++) {
-          const item = document.createElement("div");
-          item.className = "dropzone-item";
+          const item = document.createElement('div')
+          item.className = 'dropzone-item'
 
-          const status = document.createElement("div");
-          status.className = "decode-item-status decode-item-bar";
-          status.textContent = `正在解码 (${index + 1}/${fileList.length})`;
-          item.appendChild(status);
+          const status = document.createElement('div')
+          status.className = 'decode-item-status decode-item-bar'
+          status.textContent = `正在解码 (${index + 1}/${fileList.length})`
+          item.appendChild(status)
 
-          const removeBtn = document.createElement("button");
-          removeBtn.type = "button";
-          removeBtn.className = "decode-item-remove";
-          removeBtn.textContent = "×";
-          removeBtn.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            item.remove();
+          const removeBtn = document.createElement('button')
+          removeBtn.type = 'button'
+          removeBtn.className = 'decode-item-remove'
+          removeBtn.textContent = '×'
+          removeBtn.addEventListener('click', (event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            item.remove()
             if (!list.children.length) {
-              clearDecodeDropList();
+              clearDecodeDropList()
             }
-          });
-          item.appendChild(removeBtn);
-          list.appendChild(item);
-          statusNodes.push(status);
+          })
+          item.appendChild(removeBtn)
+          list.appendChild(item)
+          statusNodes.push(status)
         }
 
-        let nextIndex = 0;
-        const maxConcurrent =
-          qrWorkerReady && qrWorkers.length > 0
-            ? Math.max(2, Math.min(qrWorkers.length, 8))
-            : 1;
+        let nextIndex = 0
+        const maxConcurrent = qrWorkerReady && qrWorkers.length > 0 ? Math.max(2, Math.min(qrWorkers.length, 8)) : 1
 
         const runners = Array.from({ length: maxConcurrent }, async () => {
           while (true) {
-            if (token !== state.decodeToken) return;
-            const index = nextIndex++;
-            if (index >= fileList.length) return;
-            const file = fileList[index];
-            const status = statusNodes[index];
+            if (token !== state.decodeToken) return
+            const index = nextIndex++
+            if (index >= fileList.length) return
+            const file = fileList[index]
+            const status = statusNodes[index]
             try {
-              const decodedImage = await decodeImageFile(file);
-              if (token !== state.decodeToken) return;
-              const decoded = decodePayload(decodedImage.bytes || decodedImage.text);
-              if (token !== state.decodeToken) return;
+              const decodedImage = await decodeImageFile(file)
+              if (token !== state.decodeToken) return
+              const decoded = decodePayload(decodedImage.bytes || decodedImage.text)
+              if (token !== state.decodeToken) return
               if (decodedImage.text) {
-                document.getElementById("decodeText").value = decodedImage.text;
+                document.getElementById('decodeText').value = decodedImage.text
               }
-              setDecodeResult(decoded.text, decoded.canDownload, decoded);
+              setDecodeResult(decoded.text, decoded.canDownload, decoded)
 
-              const info = decoded.segmentInfo;
+              const info = decoded.segmentInfo
               if (info) {
-                status.textContent = `解码成功 (${info.currentSegment}/${info.totalSegments})`;
+                status.textContent = `解码成功 (${info.currentSegment}/${info.totalSegments})`
               } else if (decoded.canDownload) {
-                status.textContent = `解码成功 (${index + 1}/${fileList.length})`;
+                status.textContent = `解码成功 (${index + 1}/${fileList.length})`
               } else {
-                status.textContent = `\u89e3\u7801\u8fdb\u884c\u4e2d (${index + 1}/${fileList.length})`;
+                status.textContent = `\u89e3\u7801\u8fdb\u884c\u4e2d (${index + 1}/${fileList.length})`
               }
-              status.classList.toggle("success", Boolean(info) || decoded.canDownload);
-              status.classList.remove("error");
-              clearDecodeError();
+              status.classList.toggle('success', Boolean(info) || decoded.canDownload)
+              status.classList.remove('error')
+              clearDecodeError()
             } catch (error) {
-              if (token !== state.decodeToken) return;
-              setDecodeResult("解码失败", false);
-              setDecodeError(error.message);
-              status.textContent = `解码失败 (${index + 1}/${fileList.length})`;
-              status.classList.remove("success");
-              status.classList.add("error");
+              if (token !== state.decodeToken) return
+              setDecodeResult('解码失败', false)
+              setDecodeError(error.message)
+              status.textContent = `解码失败 (${index + 1}/${fileList.length})`
+              status.classList.remove('success')
+              status.classList.add('error')
             }
           }
-        });
-        await Promise.all(runners);
+        })
+        await Promise.all(runners)
         if (token === state.decodeToken) {
-          state.isDecoding = false;
+          state.isDecoding = false
         }
       }
 
       function decodePayload(input) {
-        let raw = "";
-        let rawBytes = null;
+        let raw = ''
+        let rawBytes = null
 
         if (input instanceof Uint8Array) {
-          rawBytes = input;
-          raw = bytesToBinaryString(input);
+          rawBytes = input
+          raw = bytesToBinaryString(input)
         } else {
-          raw = String(input || "");
-          rawBytes = binaryStringToBytes(raw);
+          raw = String(input || '')
+          rawBytes = binaryStringToBytes(raw)
         }
 
         if (!raw.length && (!rawBytes || rawBytes.length === 0)) {
-          throw new Error("\u8bf7\u8f93\u5165\u4e8c\u7ef4\u7801\u5185\u5bb9");
+          throw new Error('\u8bf7\u8f93\u5165\u4e8c\u7ef4\u7801\u5185\u5bb9')
         }
 
-        const v5Frame = parseV5Frame(rawBytes);
+        const v5Frame = parseV5Frame(rawBytes)
         if (v5Frame) {
           if (!state.segmentsData || state.expectedTotal !== v5Frame.total) {
-            state.segmentsData = new Array(v5Frame.total).fill(null);
-            state.expectedTotal = v5Frame.total;
-            state.segmentMeta = null;
+            state.segmentsData = new Array(v5Frame.total).fill(null)
+            state.expectedTotal = v5Frame.total
+            state.segmentMeta = null
           }
 
-          state.segmentsData[v5Frame.current - 1] = v5Frame;
+          state.segmentsData[v5Frame.current - 1] = v5Frame
           if ((v5Frame.flags & 1) === 1) {
-            state.segmentMeta = JSON.parse(new TextDecoder().decode(v5Frame.payload));
+            state.segmentMeta = JSON.parse(new TextDecoder().decode(v5Frame.payload))
           }
 
-          const missing = state.segmentsData
-            .map((segment, index) => (segment === null ? index + 1 : null))
-            .filter((item) => item !== null);
+          const missing = state.segmentsData.map((segment, index) => (segment === null ? index + 1 : null)).filter((item) => item !== null)
 
           if (missing.length > 0) {
             return {
@@ -2944,34 +2962,34 @@
                 totalSegments: v5Frame.total,
                 missing,
               },
-            };
+            }
           }
 
           if (!state.segmentMeta) {
-            throw new Error("\u7f3a\u5c11\u5143\u6570\u636e\u5206\u7247");
+            throw new Error('\u7f3a\u5c11\u5143\u6570\u636e\u5206\u7247')
           }
 
-          const dataFrames = state.segmentsData.filter((frame) => (frame.flags & 2) === 2);
-          const totalBytes = dataFrames.reduce((sum, frame) => sum + frame.payload.length, 0);
-          const dataBytes = new Uint8Array(totalBytes);
-          let offset = 0;
+          const dataFrames = state.segmentsData.filter((frame) => (frame.flags & 2) === 2)
+          const totalBytes = dataFrames.reduce((sum, frame) => sum + frame.payload.length, 0)
+          const dataBytes = new Uint8Array(totalBytes)
+          let offset = 0
           dataFrames.forEach((frame) => {
-            dataBytes.set(frame.payload, offset);
-            offset += frame.payload.length;
-          });
+            dataBytes.set(frame.payload, offset)
+            offset += frame.payload.length
+          })
 
-          const finalBytes = rebuildPayloadBytes(state.segmentMeta, dataBytes);
+          const finalBytes = rebuildPayloadBytes(state.segmentMeta, dataBytes)
 
-          state.segmentsData = null;
-          state.expectedTotal = 0;
+          state.segmentsData = null
+          state.expectedTotal = 0
 
-          if (state.segmentMeta.kind === "file") {
+          if (state.segmentMeta.kind === 'file') {
             return {
-              text: `\u6587\u4ef6\u89e3\u7801\u6210\u529f\uff1a${state.segmentMeta.name || "decoded.bin"} (${formatFileSize(finalBytes.length)})`,
+              text: `\u6587\u4ef6\u89e3\u7801\u6210\u529f\uff1a${state.segmentMeta.name || 'decoded.bin'} (${formatFileSize(finalBytes.length)})`,
               canDownload: true,
               decodedFile: {
-                name: state.segmentMeta.name || "decoded.bin",
-                type: state.segmentMeta.type || "application/octet-stream",
+                name: state.segmentMeta.name || 'decoded.bin',
+                type: state.segmentMeta.type || 'application/octet-stream',
                 bytes: finalBytes,
               },
               segmentInfo: {
@@ -2979,7 +2997,7 @@
                 totalSegments: v5Frame.total,
                 missing: [],
               },
-            };
+            }
           }
 
           return {
@@ -2990,106 +3008,103 @@
               totalSegments: v5Frame.total,
               missing: [],
             },
-          };
-        }
-
-        const value = raw.trim();
-        if (!value) {
-          throw new Error("\u8bf7\u8f93\u5165\u4e8c\u7ef4\u7801\u5185\u5bb9");
-        }
-
-        if (value.startsWith("v5t|")) {
-          const parts = value.split("|");
-          if (parts.length !== 3) {
-            throw new Error("v5t \u6587\u672c\u683c\u5f0f\u65e0\u6548");
           }
-          const metaObj = parseMetaBase64Url(parts[1]);
-          const payloadBytes = base64UrlToBytes(parts[2]);
-          const finalBytes = rebuildPayloadBytes(metaObj, payloadBytes);
-          if (metaObj.kind === "file") {
+        }
+
+        const value = raw.trim()
+        if (!value) {
+          throw new Error('\u8bf7\u8f93\u5165\u4e8c\u7ef4\u7801\u5185\u5bb9')
+        }
+
+        if (value.startsWith('v5t|')) {
+          const parts = value.split('|')
+          if (parts.length !== 3) {
+            throw new Error('v5t \u6587\u672c\u683c\u5f0f\u65e0\u6548')
+          }
+          const metaObj = parseMetaBase64Url(parts[1])
+          const payloadBytes = base64UrlToBytes(parts[2])
+          const finalBytes = rebuildPayloadBytes(metaObj, payloadBytes)
+          if (metaObj.kind === 'file') {
             return {
-              text: `\u6587\u4ef6\u89e3\u7801\u6210\u529f\uff1a${metaObj.name || "decoded.bin"} (${formatFileSize(finalBytes.length)})`,
+              text: `\u6587\u4ef6\u89e3\u7801\u6210\u529f\uff1a${metaObj.name || 'decoded.bin'} (${formatFileSize(finalBytes.length)})`,
               canDownload: true,
               decodedFile: {
-                name: metaObj.name || "decoded.bin",
-                type: metaObj.type || "application/octet-stream",
+                name: metaObj.name || 'decoded.bin',
+                type: metaObj.type || 'application/octet-stream',
                 bytes: finalBytes,
               },
-            };
+            }
           }
           return {
             text: new TextDecoder().decode(finalBytes),
             canDownload: true,
-          };
-        }
-
-        if (!value.startsWith("v1") && !value.startsWith("v2") && !value.startsWith("v3") && !value.startsWith("v4")) {
-          try {
-            const decompressed = LZString.decompressFromEncodedURIComponent(value);
-            return { text: decompressed || value, canDownload: true };
-          } catch (error) {
-            return { text: value, canDownload: true };
           }
         }
 
-        throw new Error("\u5f53\u524d\u4ec5\u652f\u6301 v5/v5t \u6570\u636e\u3002\u65e7\u7248 v1-v4 \u8bf7\u4f7f\u7528\u65e7\u7248\u6d41\u7a0b\u3002");
+        if (!value.startsWith('v1') && !value.startsWith('v2') && !value.startsWith('v3') && !value.startsWith('v4')) {
+          try {
+            const decompressed = LZString.decompressFromEncodedURIComponent(value)
+            return { text: decompressed || value, canDownload: true }
+          } catch (error) {
+            return { text: value, canDownload: true }
+          }
+        }
+
+        throw new Error('\u5f53\u524d\u4ec5\u652f\u6301 v5/v5t \u6570\u636e\u3002\u65e7\u7248 v1-v4 \u8bf7\u4f7f\u7528\u65e7\u7248\u6d41\u7a0b\u3002')
       }
 
-      const dropZone = document.getElementById("dropZone");
-      const qrImageInput = document.getElementById("qrImageInput");
+      const dropZone = document.getElementById('dropZone')
+      const qrImageInput = document.getElementById('qrImageInput')
 
-      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+      ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
         dropZone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-        });
-      });
+          event.preventDefault()
+          event.stopPropagation()
+        })
+      })
 
-      ["dragenter", "dragover"].forEach((eventName) => {
-        dropZone.addEventListener(eventName, () => dropZone.classList.add("dragover"));
-      });
+      ;['dragenter', 'dragover'].forEach((eventName) => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'))
+      })
 
-      ["dragleave", "drop"].forEach((eventName) => {
-        dropZone.addEventListener(eventName, () => dropZone.classList.remove("dragover"));
-      });
+      ;['dragleave', 'drop'].forEach((eventName) => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'))
+      })
 
-      dropZone.addEventListener("drop", (event) => {
-        handleDecodeFiles(event.dataTransfer.files);
-      });
+      dropZone.addEventListener('drop', (event) => {
+        handleDecodeFiles(event.dataTransfer.files)
+      })
 
-      qrImageInput.addEventListener("change", (event) => {
-        handleDecodeFiles(event.target.files);
-        event.target.value = "";
-      });
+      qrImageInput.addEventListener('change', (event) => {
+        handleDecodeFiles(event.target.files)
+        event.target.value = ''
+      })
 
-      const modal = document.getElementById("modal");
-      modal.addEventListener("click", (event) => {
+      const modal = document.getElementById('modal')
+      modal.addEventListener('click', (event) => {
         if (event.target === modal) {
-          closeModal();
+          closeModal()
         }
-      });
+      })
 
-      document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-          closeModal();
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeModal()
         }
-      });
+      })
 
-      setBatchDownloadEnabled(false);
-      setShowQrEnabled(false);
-      setShowCompressedEnabled(false);
-      setDecodedDownloadEnabled(false);
-      clearDecodeDropList();
-      updateQRStats(0, 0, 0);
-      setOptionChip("size", state.qrSize);
-      setOptionChip("ecc", state.qrEcc);
-      reorderActionButtons();
-      switchQRInputMode("file");
-      syncCompressionControls();
-      ensureQrWorker();
+      setBatchDownloadEnabled(false)
+      setShowQrEnabled(false)
+      setShowCompressedEnabled(false)
+      setDecodedDownloadEnabled(false)
+      clearDecodeDropList()
+      updateQRStats(0, 0, 0)
+      setOptionChip('size', state.qrSize)
+      setOptionChip('ecc', state.qrEcc)
+      reorderActionButtons()
+      switchQRInputMode('file')
+      syncCompressionControls()
+      ensureQrWorker()
     </script>
   </body>
 </html>
-
-
-
